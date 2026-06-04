@@ -143,6 +143,40 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 }
 .clink:hover{color:#fff}
 
+/* ─── INSTAGRAM CORNER LINK ─── */
+#ig-corner{
+  position:fixed;bottom:28px;left:30px;
+  font-size:10px;letter-spacing:3px;
+  color:rgba(255,255,255,.35);text-decoration:none;
+  z-index:200;pointer-events:auto;
+  opacity:0;transition:color .3s,opacity 1.2s;
+}
+#ig-corner:hover{color:rgba(255,255,255,.8)}
+
+/* ─── AUDIO BUTTON ─── */
+#audio-btn{
+  position:fixed;bottom:26px;right:28px;
+  display:flex;align-items:flex-end;gap:3px;
+  cursor:pointer;z-index:200;pointer-events:auto;
+  padding:8px;opacity:0;transition:opacity 1.2s;
+}
+#audio-btn .b{
+  width:3px;border-radius:2px;
+  background:rgba(255,255,255,.55);
+  transition:height .3s,background .3s;
+}
+#audio-btn:hover .b{background:rgba(255,255,255,.9)}
+#audio-btn .b:nth-child(1){animation:w1 .85s infinite ease-in-out}
+#audio-btn .b:nth-child(2){animation:w2 .85s infinite ease-in-out .12s}
+#audio-btn .b:nth-child(3){animation:w3 .85s infinite ease-in-out .06s}
+#audio-btn .b:nth-child(4){animation:w4 .85s infinite ease-in-out .18s}
+#audio-btn.off .b{height:3px !important;animation:none !important;opacity:.3}
+
+@keyframes w1{0%,100%{height:6px}50%{height:15px}}
+@keyframes w2{0%,100%{height:12px}50%{height:4px}}
+@keyframes w3{0%,100%{height:9px}50%{height:18px}}
+@keyframes w4{0%,100%{height:5px}50%{height:11px}}
+
 @keyframes breathe{0%,100%{opacity:.6}50%{opacity:1}}
 @keyframes fadeSlideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 </style>
@@ -170,6 +204,19 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
     <button onclick="openPanel('contact')">Contact</button>
   </nav>
 </div>
+
+<!-- Instagram corner -->
+<a id="ig-corner" href="https://instagram.com/ca.ttoo" target="_blank">@ca.ttoo</a>
+
+<!-- Audio button -->
+<div id="audio-btn" class="off" onclick="toggleSound()" title="Toggle sound (M)">
+  <div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div>
+</div>
+
+<!-- Background music -->
+<audio id="bgm" loop>
+  <source src="code%20inspiration/public/audio/grass_field.mp3" type="audio/mpeg">
+</audio>
 
 <!-- Hints -->
 <div id="hint">↑ ↓ ← →  move &nbsp;·&nbsp; shift  run &nbsp;·&nbsp; discover artworks in the field</div>
@@ -214,7 +261,7 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
     <h2>Contact</h2>
     <div class="clinks">
       <a class="clink" href="mailto:savoiac55@gmail.com">savoiac55@gmail.com</a>
-      <a class="clink" href="#" target="_blank">Instagram</a>
+      <a class="clink" href="https://instagram.com/ca.ttoo" target="_blank">Instagram — @ca.ttoo</a>
       <a class="clink" href="#" target="_blank">LinkedIn</a>
     </div>
   </div>
@@ -530,6 +577,25 @@ function buildGrid(){
 }
 
 /* ════════════════════════════════════════
+   AUDIO
+════════════════════════════════════════ */
+let soundOn=false;
+const bgm=document.getElementById('bgm');
+bgm.volume=0.55;
+
+window.toggleSound=function(){
+  soundOn=!soundOn;
+  const btn=document.getElementById('audio-btn');
+  if(soundOn){
+    bgm.play().catch(()=>{});
+    btn.classList.remove('off');
+  } else {
+    bgm.pause();
+    btn.classList.add('off');
+  }
+};
+
+/* ════════════════════════════════════════
    KEYBOARD
 ════════════════════════════════════════ */
 const K={};
@@ -537,6 +603,7 @@ addEventListener('keydown',e=>{K[e.code]=true});
 addEventListener('keyup',  e=>{K[e.code]=false});
 addEventListener('keydown',e=>{
   if(e.code==='Escape'){closeLightbox(true);closeAllPanels();}
+  if(e.code==='KeyM') toggleSound();
 });
 
 /* ════════════════════════════════════════
@@ -704,6 +771,8 @@ async function init(){
     setTimeout(()=>ld.style.display='none',1450);
 
     document.getElementById('site-name').style.opacity='1';
+    document.getElementById('ig-corner').style.opacity='1';
+    document.getElementById('audio-btn').style.opacity='1';
 
     setTimeout(()=>{
       const h=document.getElementById('hint');
