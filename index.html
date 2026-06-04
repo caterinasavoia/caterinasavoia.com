@@ -21,69 +21,20 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 /* ─── LOADING ─── */
 #loading{
   position:fixed;inset:0;background:#000;
-  display:flex;align-items:center;justify-content:center;
-  z-index:9000;transition:opacity 1.4s ease;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  overflow:hidden;font-size:.9rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9000;transition:opacity 1.6s ease;
 }
-.entry{
-  display:flex;flex-direction:row;align-items:center;justify-content:center;
-  gap:60px;max-width:780px;width:100%;padding:40px;
-  animation:fadeIn 2s ease;
+#ld-name{
+  font-size:clamp(16px,3vw,28px);letter-spacing:10px;
+  text-transform:uppercase;font-weight:normal;
+  opacity:0;animation:fadeIn 2.2s ease .3s forwards;
+  margin-bottom:36px;
 }
-.entry-left{flex:1;text-align:left;display:flex;flex-direction:column;}
-.entry-right{flex:.85;display:flex;flex-direction:column;align-items:center;min-width:200px;}
-
-.ld-title{
-  font-size:1rem;font-weight:bold;letter-spacing:.5rem;
-  text-transform:uppercase;margin-bottom:2rem;
+#pbar-wrap{
+  width:180px;height:1px;background:rgba(255,255,255,.1);
+  opacity:0;animation:fadeIn 1s ease 1.2s forwards;
 }
-.ld-desc{
-  text-align:left;display:inline-block;line-height:1.5;
-  color:#ccc;margin-bottom:3rem;font-size:.88rem;
-}
-.ld-desc p{margin-bottom:1rem;}
-.ld-desc p:last-child{margin-bottom:0}
-
-.play{display:flex;flex-direction:column;align-items:center;width:100%;}
-#start-btn{
-  background:none;border:none;color:#fff;
-  letter-spacing:3px;font-family:'Cousine','Courier New',monospace;
-  font-size:.88rem;text-transform:uppercase;cursor:wait;
-  transition:all .5s ease;transform:scale(1);
-  white-space:nowrap;padding:0;
-}
-#start-btn.ready{cursor:pointer;animation:breathe 2s infinite ease-in-out;}
-#start-btn.ready:hover{transform:scale(1.02);}
-#pbar-wrap{width:100%;max-width:250px;height:1px;background:#222;margin:10px auto;transition:opacity .5s;}
-#pbar{width:0%;height:100%;background:#666;transition:width .2s;}
-
-.controls{
-  margin-top:40px;color:#ccc;opacity:.8;
-  display:flex;flex-direction:row;justify-content:center;
-  gap:24px;user-select:none;flex-wrap:wrap;
-}
-.ctrl{display:flex;align-items:center;gap:0;}
-.key{
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:18px;height:22px;padding:0 5px;margin:0 2px;
-  border:1px solid #555;border-radius:4px;
-  background:rgba(255,255,255,.05);
-  font-family:'Cousine','Courier New',monospace;
-  font-size:.7rem;font-weight:bold;color:#ccc;
-  line-height:1;vertical-align:middle;
-}
-.mouse-icon{
-  display:inline-block;position:relative;
-  width:12px;height:18px;margin:0 4px;
-  border:1.5px solid #ccc;border-radius:6px;
-  vertical-align:middle;opacity:.8;
-}
-.mouse-icon::after{
-  content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);
-  width:1.5px;height:4px;background:#ccc;border-radius:1px;
-}
-.ctrl-label{margin-left:6px;font-size:.7rem;letter-spacing:1px;font-weight:500;}
+#pbar{width:0%;height:100%;background:rgba(255,255,255,.45);transition:width .25s;}
 
 /* ─── HEADER ─── */
 #header{
@@ -264,54 +215,8 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 
 <!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
-  <div class="entry">
-
-    <!-- Left: description -->
-    <div class="entry-left">
-      <div class="ld-title">Caterina Savoia</div>
-      <div class="ld-desc">
-        <p>A field that holds the work.<br>
-        Each piece placed somewhere in the grass,<br>
-        waiting to be found.</p>
-        <p>Walk until something appears.<br>
-        Step close enough and it will open.</p>
-      </div>
-    </div>
-
-    <!-- Right: button + controls -->
-    <div class="entry-right">
-      <div class="play">
-        <button id="start-btn">LOADING… 0%</button>
-        <div id="pbar-wrap"><div id="pbar"></div></div>
-      </div>
-
-      <div class="controls" id="controls">
-        <div class="ctrl">
-          <span class="key">W</span><span class="key">A</span>
-          <span class="key">S</span><span class="key">D</span>
-          <span class="ctrl-label">MOVE</span>
-        </div>
-        <div class="ctrl">
-          <span class="key">↑</span><span class="key">↓</span>
-          <span class="key">←</span><span class="key">→</span>
-          <span class="ctrl-label">MOVE</span>
-        </div>
-        <div class="ctrl">
-          <span class="key">SHIFT</span>
-          <span class="ctrl-label">RUN</span>
-        </div>
-        <div class="ctrl">
-          <span class="key">C</span>
-          <span class="ctrl-label">CAM</span>
-        </div>
-        <div class="ctrl">
-          <span class="mouse-icon"></span>
-          <span class="ctrl-label">LOOK</span>
-        </div>
-      </div>
-    </div>
-
-  </div>
+  <div id="ld-name">Caterina Savoia</div>
+  <div id="pbar-wrap"><div id="pbar"></div></div>
 </div>
 
 <!-- ══ HEADER ══ -->
@@ -810,38 +715,36 @@ function animate(ms){
 /* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
-async function init(){
-  buildGrid();
-  const btn=document.getElementById('start-btn'), pb=document.getElementById('pbar');
-  let p=0;
-  const iv=setInterval(()=>{ p=Math.min(p+Math.random()*18,88); pb.style.width=p+'%';
-    btn.textContent=`${p<50?'LOADING':'CALIBRATING'}… ${Math.round(p)}%`; },180);
+function enterWorld(){
+  const ld=document.getElementById('loading');
+  ld.style.opacity='0';
+  setTimeout(()=>ld.style.display='none',1650);
 
-  await loadArtworks();
-  clearInterval(iv); pb.style.width='100%';
+  ['site-name','ig-corner','audio-btn','sidebar'].forEach(id=>{
+    document.getElementById(id).style.opacity='1';
+  });
 
   setTimeout(()=>{
-    btn.textContent='[ START ]';
-    btn.classList.add('ready');
-  },350);
+    const h=document.getElementById('hint');
+    h.style.opacity='1';
+    setTimeout(()=>{ h.style.transition='opacity 3.5s'; h.style.opacity='0'; },7000);
+  },2000);
 
-  btn.addEventListener('click',()=>{
-    const ld=document.getElementById('loading');
-    ld.style.opacity='0';
-    setTimeout(()=>ld.style.display='none',1450);
+  requestAnimationFrame(animate);
+}
 
-    ['site-name','ig-corner','audio-btn','sidebar'].forEach(id=>{
-      document.getElementById(id).style.opacity='1';
-    });
+async function init(){
+  buildGrid();
+  const pb=document.getElementById('pbar');
+  let p=0;
+  const iv=setInterval(()=>{ p=Math.min(p+Math.random()*18,88); pb.style.width=p+'%'; },180);
 
-    setTimeout(()=>{
-      const h=document.getElementById('hint');
-      h.style.opacity='1';
-      setTimeout(()=>{ h.style.transition='opacity 3.5s'; h.style.opacity='0'; },7000);
-    },1800);
+  await loadArtworks();
+  clearInterval(iv);
 
-    requestAnimationFrame(animate);
-  });
+  // fill bar to 100% then auto-enter
+  pb.style.width='100%';
+  setTimeout(enterWorld, 900);
 }
 
 addEventListener('resize',()=>{
