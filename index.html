@@ -2,72 +2,175 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
 <title>Caterina Savoia</title>
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-
-html,body{
-  width:100%;height:100%;
-  background:#000;overflow:hidden;
-  font-family:'Courier New',monospace;
-  color:#fff;
+@font-face{
+  font-family:'Cousine';
+  src:url('code%20inspiration/public/fonts/Cousine-Regular.ttf') format('truetype');
+  font-weight:normal;font-style:normal;
 }
 
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  width:100%;height:100%;background:#000;overflow:hidden;
+  font-family:'Cousine','Courier New',monospace;color:#fff;
+}
 canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 
 /* ─── LOADING ─── */
 #loading{
   position:fixed;inset:0;background:#000;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:center;
   z-index:9000;transition:opacity 1.4s ease;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow:hidden;font-size:.9rem;
 }
-#loading-name{
-  font-size:clamp(16px,3vw,26px);letter-spacing:10px;text-transform:uppercase;
-  font-weight:300;margin-bottom:12px;
+.entry{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:60px;max-width:780px;width:100%;padding:40px;
+  animation:fadeIn 2s ease;
 }
-#loading-role{
-  font-size:11px;letter-spacing:4px;color:rgba(255,255,255,.35);margin-bottom:50px;
+.entry-left{flex:1;text-align:left;display:flex;flex-direction:column;}
+.entry-right{flex:.85;display:flex;flex-direction:column;align-items:center;min-width:200px;}
+
+.ld-title{
+  font-size:1rem;font-weight:bold;letter-spacing:.5rem;
+  text-transform:uppercase;margin-bottom:2rem;
 }
+.ld-desc{
+  text-align:left;display:inline-block;line-height:1.5;
+  color:#ccc;margin-bottom:3rem;font-size:.88rem;
+}
+.ld-desc p{margin-bottom:1rem;}
+.ld-desc p:last-child{margin-bottom:0}
+
+.play{display:flex;flex-direction:column;align-items:center;width:100%;}
 #start-btn{
-  background:none;border:1px solid rgba(255,255,255,.25);color:#fff;
-  padding:12px 44px;font-family:inherit;font-size:11px;
-  letter-spacing:4px;text-transform:uppercase;cursor:pointer;
-  transition:all .3s;
+  background:none;border:none;color:#fff;
+  letter-spacing:3px;font-family:'Cousine','Courier New',monospace;
+  font-size:.88rem;text-transform:uppercase;cursor:wait;
+  transition:all .5s ease;transform:scale(1);
+  white-space:nowrap;padding:0;
 }
-#start-btn:hover{border-color:#fff;background:rgba(255,255,255,.05)}
-#start-btn:disabled{opacity:.35;cursor:wait;animation:none}
-#pbar-wrap{width:200px;height:1px;background:rgba(255,255,255,.1);margin-top:12px}
-#pbar{height:100%;background:rgba(255,255,255,.45);width:0%;transition:width .3s}
+#start-btn.ready{cursor:pointer;animation:breathe 2s infinite ease-in-out;}
+#start-btn.ready:hover{transform:scale(1.02);}
+#pbar-wrap{width:100%;max-width:250px;height:1px;background:#222;margin:10px auto;transition:opacity .5s;}
+#pbar{width:0%;height:100%;background:#666;transition:width .2s;}
+
+.controls{
+  margin-top:40px;color:#ccc;opacity:.8;
+  display:flex;flex-direction:row;justify-content:center;
+  gap:24px;user-select:none;flex-wrap:wrap;
+}
+.ctrl{display:flex;align-items:center;gap:0;}
+.key{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:22px;padding:0 5px;margin:0 2px;
+  border:1px solid #555;border-radius:4px;
+  background:rgba(255,255,255,.05);
+  font-family:'Cousine','Courier New',monospace;
+  font-size:.7rem;font-weight:bold;color:#ccc;
+  line-height:1;vertical-align:middle;
+}
+.mouse-icon{
+  display:inline-block;position:relative;
+  width:12px;height:18px;margin:0 4px;
+  border:1.5px solid #ccc;border-radius:6px;
+  vertical-align:middle;opacity:.8;
+}
+.mouse-icon::after{
+  content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);
+  width:1.5px;height:4px;background:#ccc;border-radius:1px;
+}
+.ctrl-label{margin-left:6px;font-size:.7rem;letter-spacing:1px;font-weight:500;}
 
 /* ─── HEADER ─── */
 #header{
   position:fixed;top:0;left:0;right:0;
-  padding:22px 40px;
+  padding:20px 28px;
   display:flex;justify-content:space-between;align-items:center;
   z-index:200;pointer-events:none;
 }
 #site-name{
-  font-size:clamp(11px,1.6vw,15px);letter-spacing:6px;text-transform:uppercase;
-  font-weight:300;opacity:0;transition:opacity 1.2s ease;
+  font-size:clamp(10px,1.4vw,13px);letter-spacing:5px;text-transform:uppercase;
+  font-weight:normal;opacity:0;transition:opacity 1.2s ease;
+  font-family:'Cousine','Courier New',monospace;
 }
-#nav{display:flex;gap:28px;pointer-events:auto}
+#nav{display:flex;gap:24px;pointer-events:auto}
 #nav button{
-  background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;
-  font-family:inherit;font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;
+  font-family:'Cousine','Courier New',monospace;
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
   transition:color .3s;padding:0;
 }
 #nav button:hover{color:#fff}
 
-/* ─── HINT ─── */
+/* ─── SIDEBAR (top-right) ─── */
+#sidebar{
+  position:fixed;top:10px;right:10px;
+  display:flex;flex-direction:column;gap:10px;
+  z-index:200;pointer-events:auto;
+  opacity:0;transition:opacity 1.2s;
+}
+.sb-btn{
+  background:rgba(0,0,0,.2);backdrop-filter:blur(4px);
+  border-radius:8px;padding:10px;
+  border:1px solid rgba(255,255,255,.1);
+  transition:all .2s ease;color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;font-size:17px;
+  font-family:'Cousine','Courier New',monospace;
+}
+.sb-btn:hover{background:rgba(0,0,0,.6);border-color:rgba(255,255,255,.3);}
+.sb-btn.quality-on{color:#4fc3f7;filter:drop-shadow(0 0 5px rgba(0,255,255,.5));}
+
+/* ─── INSTAGRAM CORNER ─── */
+#ig-corner{
+  position:fixed;bottom:28px;left:28px;
+  font-family:'Cousine','Courier New',monospace;
+  font-size:10px;letter-spacing:3px;text-transform:lowercase;
+  color:rgba(255,255,255,.35);text-decoration:none;
+  z-index:200;pointer-events:auto;
+  opacity:0;transition:color .3s,opacity 1.2s;
+}
+#ig-corner:hover{color:rgba(255,255,255,.8)}
+
+/* ─── AUDIO BUTTON (bottom-right) ─── */
+#audio-btn{
+  position:fixed;bottom:22px;right:22px;
+  width:44px;height:44px;
+  cursor:pointer;z-index:200;pointer-events:auto;
+  opacity:0;transition:opacity 1.2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.audio-ring{
+  position:absolute;border-radius:50%;
+  border:1px solid rgba(255,255,255,.4);
+  transition:all .3s;
+}
+#audio-btn .r1{width:18px;height:18px;}
+#audio-btn .r2{width:28px;height:28px;opacity:.5;}
+#audio-btn .r3{width:40px;height:40px;opacity:.25;}
+#audio-btn.snd-on .r1{animation:ringPulse .9s infinite ease-in-out;}
+#audio-btn.snd-on .r2{animation:ringPulse .9s infinite ease-in-out .2s;}
+#audio-btn.snd-on .r3{animation:ringPulse .9s infinite ease-in-out .4s;}
+#audio-btn.snd-off .r1{width:14px;height:14px;opacity:.25;animation:none;}
+#audio-btn.snd-off .r2,.snd-off .r3{opacity:.1;animation:none;}
+
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.18);opacity:.9}}
+
+/* ─── HINTS ─── */
 #hint{
   position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  font-family:'Cousine','Courier New',monospace;
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
   color:rgba(255,255,255,.3);opacity:0;pointer-events:none;
   white-space:nowrap;z-index:200;transition:opacity 1s;
 }
 #art-hint{
-  position:fixed;bottom:58px;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:52px;left:50%;transform:translateX(-50%);
+  font-family:'Cousine','Courier New',monospace;
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
   color:rgba(255,255,255,.6);opacity:0;pointer-events:none;
   white-space:nowrap;z-index:200;transition:opacity .5s;
@@ -75,110 +178,82 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 
 /* ─── LIGHTBOX ─── */
 #lightbox{
-  position:fixed;inset:0;background:rgba(0,0,0,.93);
+  position:fixed;inset:0;background:rgba(0,0,0,.94);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:600;opacity:0;pointer-events:none;transition:opacity .55s ease;
 }
 #lightbox.on{opacity:1;pointer-events:auto}
 #lb-img{
-  max-width:82vw;max-height:76vh;object-fit:contain;
-  transform:scale(.93);transition:transform .55s ease;display:block;
+  max-width:82vw;max-height:76vh;object-fit:contain;display:block;
+  transform:scale(.93);transition:transform .55s ease;
 }
 #lightbox.on #lb-img{transform:scale(1)}
 #lb-title{
   margin-top:22px;font-size:10px;letter-spacing:4px;
-  text-transform:uppercase;color:rgba(255,255,255,.45);
+  text-transform:uppercase;color:rgba(255,255,255,.4);
+  font-family:'Cousine','Courier New',monospace;
 }
 #lb-close{
-  position:absolute;top:26px;right:36px;background:none;border:none;
-  color:rgba(255,255,255,.4);cursor:pointer;font-family:inherit;
+  position:absolute;top:26px;right:32px;background:none;border:none;
+  color:rgba(255,255,255,.35);cursor:pointer;
+  font-family:'Cousine','Courier New',monospace;
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  transition:color .3s;
 }
 #lb-close:hover{color:#fff}
 
 /* ─── PANELS ─── */
 .panel{
-  position:fixed;inset:0;background:rgba(0,0,0,.95);
+  position:fixed;inset:0;background:rgba(0,0,0,.96);
   z-index:500;opacity:0;pointer-events:none;transition:opacity .45s;
   display:flex;align-items:center;justify-content:center;
   padding:70px 5vw 50px;overflow-y:auto;
+  font-family:'Cousine','Courier New',monospace;
 }
 .panel.on{opacity:1;pointer-events:auto}
 .panel-close{
-  position:absolute;top:26px;right:36px;background:none;border:none;
-  color:rgba(255,255,255,.4);cursor:pointer;font-family:inherit;
-  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  position:absolute;top:26px;right:32px;background:none;border:none;
+  color:rgba(255,255,255,.35);cursor:pointer;
+  font-family:'Cousine','Courier New',monospace;
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;transition:color .3s;
 }
 .panel-close:hover{color:#fff}
 .panel h2{
-  font-size:clamp(18px,3vw,30px);letter-spacing:8px;font-weight:300;
+  font-size:clamp(16px,2.8vw,26px);letter-spacing:8px;font-weight:normal;
   text-transform:uppercase;margin-bottom:40px;
 }
 
-/* Bio */
 #bio-panel .inner{max-width:560px}
-#bio-panel p{font-size:13px;color:rgba(255,255,255,.65);line-height:2.3;letter-spacing:.5px}
+#bio-panel p{font-size:13px;color:rgba(255,255,255,.6);line-height:2.3;letter-spacing:.5px}
 
-/* Portfolio grid */
-#portfolio-panel .inner{max-width:980px;width:100%}
+#portfolio-panel .inner{max-width:960px;width:100%}
 #portfolio-panel h2{text-align:center}
-#pgrid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-  gap:16px;overflow-y:auto;max-height:60vh;
-}
+#pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;overflow-y:auto;max-height:60vh;}
 .pitem{cursor:pointer;border:1px solid rgba(255,255,255,.07);transition:border-color .3s;overflow:hidden}
-.pitem:hover{border-color:rgba(255,255,255,.3)}
+.pitem:hover{border-color:rgba(255,255,255,.28)}
 .pitem img{width:100%;height:160px;object-fit:cover;display:block;transition:transform .4s}
 .pitem:hover img{transform:scale(1.05)}
-.pitem-label{padding:10px 12px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.pitem-label{padding:10px 12px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);font-family:'Cousine','Courier New',monospace;}
 
-/* Contact */
 #contact-panel .inner{text-align:center}
-.clinks{display:flex;flex-direction:column;gap:18px;align-items:center;margin-top:0}
+.clinks{display:flex;flex-direction:column;gap:18px;align-items:center}
 .clink{
   font-size:11px;letter-spacing:4px;text-transform:uppercase;
-  color:rgba(255,255,255,.55);text-decoration:none;transition:color .3s;background:none;
-  border:none;cursor:pointer;font-family:inherit;padding:0;
+  color:rgba(255,255,255,.5);text-decoration:none;transition:color .3s;
+  background:none;border:none;cursor:pointer;
+  font-family:'Cousine','Courier New',monospace;padding:0;
 }
 .clink:hover{color:#fff}
 
-/* ─── INSTAGRAM CORNER LINK ─── */
-#ig-corner{
-  position:fixed;bottom:28px;left:30px;
-  font-size:10px;letter-spacing:3px;
-  color:rgba(255,255,255,.35);text-decoration:none;
-  z-index:200;pointer-events:auto;
-  opacity:0;transition:color .3s,opacity 1.2s;
-}
-#ig-corner:hover{color:rgba(255,255,255,.8)}
-
-/* ─── AUDIO BUTTON ─── */
-#audio-btn{
-  position:fixed;bottom:26px;right:28px;
-  display:flex;align-items:flex-end;gap:3px;
-  cursor:pointer;z-index:200;pointer-events:auto;
-  padding:8px;opacity:0;transition:opacity 1.2s;
-}
-#audio-btn .b{
-  width:3px;border-radius:2px;
-  background:rgba(255,255,255,.55);
-  transition:height .3s,background .3s;
-}
-#audio-btn:hover .b{background:rgba(255,255,255,.9)}
-#audio-btn .b:nth-child(1){animation:w1 .85s infinite ease-in-out}
-#audio-btn .b:nth-child(2){animation:w2 .85s infinite ease-in-out .12s}
-#audio-btn .b:nth-child(3){animation:w3 .85s infinite ease-in-out .06s}
-#audio-btn .b:nth-child(4){animation:w4 .85s infinite ease-in-out .18s}
-#audio-btn.off .b{height:3px !important;animation:none !important;opacity:.3}
-
-@keyframes w1{0%,100%{height:6px}50%{height:15px}}
-@keyframes w2{0%,100%{height:12px}50%{height:4px}}
-@keyframes w3{0%,100%{height:9px}50%{height:18px}}
-@keyframes w4{0%,100%{height:5px}50%{height:11px}}
-
 @keyframes breathe{0%,100%{opacity:.6}50%{opacity:1}}
-@keyframes fadeSlideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ─── MOBILE ─── */
+@media(max-width:600px),(max-height:500px){
+  .entry{flex-direction:column;gap:30px;padding:20px;}
+  .ld-desc{margin-bottom:1.5rem;font-size:.78rem;}
+  .controls{gap:14px;margin-top:20px;}
+}
 </style>
 
 <script type="importmap">
@@ -187,15 +262,59 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 </head>
 <body>
 
-<!-- Loading -->
+<!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
-  <div id="loading-name">Caterina Savoia</div>
-  <div id="loading-role">Product Designer</div>
-  <button id="start-btn" disabled>Loading…</button>
-  <div id="pbar-wrap"><div id="pbar"></div></div>
+  <div class="entry">
+
+    <!-- Left: description -->
+    <div class="entry-left">
+      <div class="ld-title">Caterina Savoia</div>
+      <div class="ld-desc">
+        <p>A field that holds the work.<br>
+        Each piece placed somewhere in the grass,<br>
+        waiting to be found.</p>
+        <p>Walk until something appears.<br>
+        Step close enough and it will open.</p>
+      </div>
+    </div>
+
+    <!-- Right: button + controls -->
+    <div class="entry-right">
+      <div class="play">
+        <button id="start-btn">LOADING… 0%</button>
+        <div id="pbar-wrap"><div id="pbar"></div></div>
+      </div>
+
+      <div class="controls" id="controls">
+        <div class="ctrl">
+          <span class="key">W</span><span class="key">A</span>
+          <span class="key">S</span><span class="key">D</span>
+          <span class="ctrl-label">MOVE</span>
+        </div>
+        <div class="ctrl">
+          <span class="key">↑</span><span class="key">↓</span>
+          <span class="key">←</span><span class="key">→</span>
+          <span class="ctrl-label">MOVE</span>
+        </div>
+        <div class="ctrl">
+          <span class="key">SHIFT</span>
+          <span class="ctrl-label">RUN</span>
+        </div>
+        <div class="ctrl">
+          <span class="key">C</span>
+          <span class="ctrl-label">CAM</span>
+        </div>
+        <div class="ctrl">
+          <span class="mouse-icon"></span>
+          <span class="ctrl-label">LOOK</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-<!-- Header -->
+<!-- ══ HEADER ══ -->
 <div id="header">
   <div id="site-name">Caterina Savoia</div>
   <nav id="nav">
@@ -205,63 +324,78 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
   </nav>
 </div>
 
-<!-- Instagram corner -->
-<a id="ig-corner" href="https://instagram.com/ca.ttoo" target="_blank">@ca.ttoo</a>
-
-<!-- Audio button -->
-<div id="audio-btn" class="off" onclick="toggleSound()" title="Toggle sound (M)">
-  <div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div>
+<!-- ══ SIDEBAR ══ -->
+<div id="sidebar">
+  <button class="sb-btn quality-on" id="quality-btn" title="Toggle quality" onclick="toggleQuality()">✦</button>
+  <button class="sb-btn" id="cam-btn" title="Toggle camera (C)" onclick="cycleCamera()">◎</button>
 </div>
 
-<!-- Background music -->
-<audio id="bgm" loop>
-  <source src="code%20inspiration/public/audio/grass_field.mp3" type="audio/mpeg">
-</audio>
+<!-- ══ INSTAGRAM CORNER ══ -->
+<a id="ig-corner" href="https://instagram.com/ca.ttoo" target="_blank" rel="noopener">@ca.ttoo</a>
 
-<!-- Hints -->
-<div id="hint">↑ ↓ ← →  move &nbsp;·&nbsp; shift  run &nbsp;·&nbsp; discover artworks in the field</div>
-<div id="art-hint">· walk closer to discover ·</div>
+<!-- ══ AUDIO BUTTON ══ -->
+<div id="audio-btn" class="snd-off" onclick="toggleSound()" title="Toggle sound (M)">
+  <div class="audio-ring r1"></div>
+  <div class="audio-ring r2"></div>
+  <div class="audio-ring r3"></div>
+</div>
 
-<!-- Lightbox -->
+<!-- ══ AUDIO ══ -->
+<audio id="bgm-ambient" loop><source src="code%20inspiration/public/audio/grass_field.mp3" type="audio/mpeg"></audio>
+<audio id="bgm-noise"   loop><source src="code%20inspiration/public/audio/noise.m4a"       type="audio/mp4"></audio>
+<!-- Footstep pool -->
+<audio id="fs0"><source src="code%20inspiration/public/audio/fs_grass1.mp3" type="audio/mpeg"></audio>
+<audio id="fs1"><source src="code%20inspiration/public/audio/fs_grass2.mp3" type="audio/mpeg"></audio>
+<audio id="fs2"><source src="code%20inspiration/public/audio/fs_grass3.mp3" type="audio/mpeg"></audio>
+<audio id="fs3"><source src="code%20inspiration/public/audio/fs_grass4.mp3" type="audio/mpeg"></audio>
+<audio id="fs4"><source src="code%20inspiration/public/audio/fs_grass5.mp3" type="audio/mpeg"></audio>
+
+<!-- ══ HINTS ══ -->
+<div id="hint">WASD / ↑↓←→  MOVE &nbsp;·&nbsp; SHIFT  RUN &nbsp;·&nbsp; C  CAM &nbsp;·&nbsp; DISCOVER ARTWORKS IN THE FIELD</div>
+<div id="art-hint">· WALK CLOSER TO DISCOVER ·</div>
+
+<!-- ══ LIGHTBOX ══ -->
 <div id="lightbox">
-  <button id="lb-close" onclick="closeLightbox()">[ close ]</button>
+  <button id="lb-close" onclick="closeLightbox()">[ CLOSE ]</button>
   <img id="lb-img" src="" alt="">
   <div id="lb-title"></div>
 </div>
 
-<!-- Bio Panel -->
+<!-- ══ BIO PANEL ══ -->
 <div id="bio-panel" class="panel">
-  <button class="panel-close" onclick="closePanel('bio')">[ close ]</button>
+  <button class="panel-close" onclick="closePanel('bio')">[ CLOSE ]</button>
   <div class="inner">
     <h2>Bio</h2>
     <p>
-      Caterina Savoia is a product designer working at the intersection of function and material poetry.<br><br>
-      Her practice spans industrial design, editorial objects, and spatial research — grounded in
-      rigorous process and driven by a deep attentiveness to the sensory life of everyday things.<br><br>
-      She is interested in the quiet relationships between people and the objects they inhabit,
-      and how design can hold both utility and meaning at once.<br><br>
-      Currently based in Italy.
+      Caterina Savoia is a designer and digital artist based in Berlin.<br><br>
+      Her background spans 2D and 3D design — from graphic and editorial work
+      to spatial and product design — with a practice that moves fluidly between
+      physical and digital form.<br><br>
+      She works at the intersection of design and digital art, exploring how
+      objects, images, and environments carry meaning beyond their function.<br><br>
+      Her work is shaped by a rigorous process and a deep attention to the sensory
+      qualities of materials, space, and screen.
     </p>
   </div>
 </div>
 
-<!-- Portfolio Panel -->
+<!-- ══ PORTFOLIO PANEL ══ -->
 <div id="portfolio-panel" class="panel">
-  <button class="panel-close" onclick="closePanel('portfolio')">[ close ]</button>
+  <button class="panel-close" onclick="closePanel('portfolio')">[ CLOSE ]</button>
   <div class="inner">
     <h2>Portfolio</h2>
     <div id="pgrid"></div>
   </div>
 </div>
 
-<!-- Contact Panel -->
+<!-- ══ CONTACT PANEL ══ -->
 <div id="contact-panel" class="panel">
-  <button class="panel-close" onclick="closePanel('contact')">[ close ]</button>
+  <button class="panel-close" onclick="closePanel('contact')">[ CLOSE ]</button>
   <div class="inner">
     <h2>Contact</h2>
     <div class="clinks">
       <a class="clink" href="mailto:savoiac55@gmail.com">savoiac55@gmail.com</a>
-      <a class="clink" href="https://instagram.com/ca.ttoo" target="_blank">Instagram — @ca.ttoo</a>
+      <a class="clink" href="https://instagram.com/ca.ttoo" target="_blank" rel="noopener">Instagram — @ca.ttoo</a>
       <a class="clink" href="#" target="_blank">LinkedIn</a>
     </div>
   </div>
@@ -273,37 +407,33 @@ import * as THREE from 'three';
 /* ════════════════════════════════════════
    CONFIG
 ════════════════════════════════════════ */
-const GRASS_COUNT   = 16000;
-const GRASS_AREA    = 65;
-const GRASS_H       = 1.15;
-const CHAR_SPEED    = 5.5;
-const CHAR_RUN      = 11;
-const CHAR_ROT      = 2.4;
-const ART_OPEN_D    = 3.8;   // enter lightbox
-const ART_CLOSE_D   = 6.0;   // exit lightbox
-const LB_COOLDOWN   = 1800;  // ms after manual close
+const GRASS_COUNT = 16000;
+const GRASS_AREA  = 65;
+const GRASS_H     = 1.15;
+const CHAR_SPEED  = 5.5;
+const CHAR_RUN    = 11;
+const CHAR_ROT    = 2.4;
+const ART_OPEN_D  = 3.8;
+const ART_CLOSE_D = 6.0;
+const LB_COOLDOWN = 1800;
 
 const ARTWORKS = [
   { src:'portfolio/product%20design/AG%20copia.png',
-    title:'AG — Product Study',
-    pos:[-15,0,-13], rot: 0.35 },
+    title:'AG — Product Study', pos:[-15,0,-13], rot:0.35 },
   { src:'portfolio/product%20design/AG2-1%20copia.png',
-    title:'AG II — Material Exploration',
-    pos:[17,0,-11], rot:-0.4 },
+    title:'AG II — Material Exploration', pos:[17,0,-11], rot:-0.4 },
   { src:'portfolio/product%20design/Concept%20e%20moodboard%20copia%202.jpg',
-    title:'Concept & Moodboard',
-    pos:[-11,0,17], rot: 0.18 },
+    title:'Concept & Moodboard', pos:[-11,0,17], rot:0.18 },
   { src:'portfolio/product%20design/Zfold-Hanging-Brochure-Stationery-Mockup%20copia%205.jpg',
-    title:'Z-Fold Brochure',
-    pos:[15,0,15], rot:-0.22 },
+    title:'Z-Fold Brochure', pos:[15,0,15], rot:-0.22 },
 ];
 
 /* ════════════════════════════════════════
    RENDERER / SCENE / CAMERA
 ════════════════════════════════════════ */
-const scene    = new THREE.Scene();
+const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog        = new THREE.FogExp2(0x000000, 0.013);
+scene.fog = new THREE.FogExp2(0x000000, 0.013);
 
 const camera = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 0.1, 200);
 camera.position.set(0, 9, 17);
@@ -327,9 +457,7 @@ scene.add(dir);
 {
   const n=4200, pos=new Float32Array(n*3);
   for(let i=0;i<n;i++){
-    const r=100+Math.random()*40;
-    const th=Math.random()*Math.PI*2;
-    const ph=Math.random()*Math.PI*.55;
+    const r=100+Math.random()*40, th=Math.random()*Math.PI*2, ph=Math.random()*Math.PI*.55;
     pos[i*3]  =r*Math.sin(ph)*Math.cos(th);
     pos[i*3+1]=r*Math.cos(ph)*.55+18;
     pos[i*3+2]=r*Math.sin(ph)*Math.sin(th);
@@ -343,12 +471,8 @@ scene.add(dir);
    GROUND
 ════════════════════════════════════════ */
 {
-  const g=new THREE.PlaneGeometry(220,220);
-  const m=new THREE.MeshBasicMaterial({color:0x010401});
-  const p=new THREE.Mesh(g,m);
-  p.rotation.x=-Math.PI/2;
-  p.position.y=-.02;
-  scene.add(p);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshBasicMaterial({color:0x010401}));
+  m.rotation.x=-Math.PI/2; m.position.y=-.02; scene.add(m);
 }
 
 /* ════════════════════════════════════════
@@ -359,36 +483,23 @@ uniform float uT;
 uniform vec3  uChar;
 varying float vH;
 varying vec2  vUv;
-
 void main(){
   vec3 iPos=vec3(instanceMatrix[3][0],instanceMatrix[3][1],instanceMatrix[3][2]);
   float t=position.y/${GRASS_H.toFixed(3)};
   float sw=t*t;
-
   float wx=sin(uT*1.35+iPos.x*.48+iPos.z*.37)*.20*sw;
   float wz=cos(uT*.95+iPos.z*.47+iPos.x*.29)*.13*sw;
-
   vec2 toC=iPos.xz-uChar.xz;
   float cd=length(toC);
-  if(cd<4.0&&cd>.05){
-    float b=(1.0-cd/4.0)*sw*2.1;
-    wx+=normalize(toC).x*b;
-    wz+=normalize(toC).y*b;
-  }
-
-  vec3 p=position;
-  p.x+=wx; p.z+=wz;
+  if(cd<4.0&&cd>.05){float b=(1.0-cd/4.0)*sw*2.1;wx+=normalize(toC).x*b;wz+=normalize(toC).y*b;}
+  vec3 p=position; p.x+=wx; p.z+=wz;
   vH=t; vUv=uv;
   gl_Position=projectionMatrix*viewMatrix*instanceMatrix*vec4(p,1.0);
 }`;
-
 const grassFS=`
-varying float vH;
-varying vec2  vUv;
+varying float vH;varying vec2 vUv;
 void main(){
-  vec3 base=vec3(.01,.055,.01);
-  vec3 mid =vec3(.04,.20,.05);
-  vec3 tip =vec3(.16,.50,.12);
+  vec3 base=vec3(.01,.055,.01),mid=vec3(.04,.20,.05),tip=vec3(.16,.50,.12);
   vec3 col=vH<.5?mix(base,mid,vH*2.0):mix(mid,tip,(vH-.5)*2.0);
   float edge=abs(vUv.x-.5)*2.0;
   float a=1.0-smoothstep(.65,1.0,edge);
@@ -396,50 +507,40 @@ void main(){
 }`;
 
 function bladeGeo(){
-  const segs=4, w=.065, h=GRASS_H;
-  const pos=[],uvs=[],idx=[];
+  const segs=4,w=.065,h=GRASS_H,pos=[],uvs=[],idx=[];
   for(let i=0;i<=segs;i++){
-    const t=i/segs, bnd=t*t*.09, ww=w*(1-t*.72);
-    pos.push(-ww,t*h,bnd, ww,t*h,bnd);
-    uvs.push(0,t,1,t);
+    const t=i/segs,bnd=t*t*.09,ww=w*(1-t*.72);
+    pos.push(-ww,t*h,bnd,ww,t*h,bnd); uvs.push(0,t,1,t);
   }
-  for(let i=0;i<segs;i++){
-    const b=i*2;
-    idx.push(b,b+1,b+2, b+1,b+3,b+2);
-  }
+  for(let i=0;i<segs;i++){const b=i*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  g.setIndex(idx);
-  return g;
+  g.setIndex(idx); return g;
 }
 
-const uGrassT   ={value:0};
-const uGrassChar={value:new THREE.Vector3()};
-const grassMat  =new THREE.ShaderMaterial({
-  vertexShader:grassVS, fragmentShader:grassFS,
+const uGrassT={value:0}, uGrassChar={value:new THREE.Vector3()};
+const grassMat=new THREE.ShaderMaterial({
+  vertexShader:grassVS,fragmentShader:grassFS,
   uniforms:{uT:uGrassT,uChar:uGrassChar},
-  side:THREE.DoubleSide, transparent:true,
+  side:THREE.DoubleSide,transparent:true,
 });
-
 const grassMesh=new THREE.InstancedMesh(bladeGeo(),grassMat,GRASS_COUNT);
 {
   const d=new THREE.Object3D();
   for(let i=0;i<GRASS_COUNT;i++){
-    const a=Math.random()*Math.PI*2;
-    const r=Math.sqrt(Math.random())*GRASS_AREA;
+    const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*GRASS_AREA;
     d.position.set(Math.cos(a)*r,0,Math.sin(a)*r);
     d.rotation.y=Math.random()*Math.PI*2;
-    d.scale.set(.75+Math.random()*.55, .65+Math.random()*.65, 1);
-    d.updateMatrix();
-    grassMesh.setMatrixAt(i,d.matrix);
+    d.scale.set(.75+Math.random()*.55,.65+Math.random()*.65,1);
+    d.updateMatrix(); grassMesh.setMatrixAt(i,d.matrix);
   }
   grassMesh.instanceMatrix.needsUpdate=true;
 }
 scene.add(grassMesh);
 
 /* ════════════════════════════════════════
-   CHARACTER (astronaut — pivot-based rig)
+   CHARACTER (pivot-based rig)
 ════════════════════════════════════════ */
 const charGroup=new THREE.Group();
 scene.add(charGroup);
@@ -447,41 +548,27 @@ scene.add(charGroup);
 const bodyMat=new THREE.MeshStandardMaterial({color:0xdde8f0,emissive:0x223344,roughness:.35,metalness:.7});
 const headMat=new THREE.MeshStandardMaterial({color:0xccddee,emissive:0x445566,roughness:.25,metalness:.75});
 
-// torso (tilts forward when running)
 const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.27,.58,4,8),bodyMat);
 torso.position.y=.9; charGroup.add(torso);
-// head
+
 const head=new THREE.Mesh(new THREE.SphereGeometry(.24,16,16),headMat);
 head.position.y=1.58; charGroup.add(head);
-// visor
-const visor=new THREE.Mesh(
-  new THREE.SphereGeometry(.195,16,10,0,Math.PI*2,0,Math.PI*.52),
-  new THREE.MeshStandardMaterial({color:0x2277ff,emissive:0x0055ee,emissiveIntensity:1.2,transparent:true,opacity:.55})
-);
+
+const visorMat=new THREE.MeshStandardMaterial({color:0x2277ff,emissive:0x0055ee,emissiveIntensity:1.2,transparent:true,opacity:.55});
+const visor=new THREE.Mesh(new THREE.SphereGeometry(.195,16,10,0,Math.PI*2,0,Math.PI*.52),visorMat);
 visor.position.set(0,1.6,.04); charGroup.add(visor);
 
-// arm pivots — rotate from shoulder so full arm swings naturally
 const armPivots=[-1,1].map(s=>{
-  const piv=new THREE.Group();
-  piv.position.set(s*.42,1.15,0);          // shoulder position
+  const piv=new THREE.Group(); piv.position.set(s*.42,1.15,0);
   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.4,4,6),bodyMat);
-  arm.position.y=-.28;                      // hang below shoulder
-  arm.rotation.z=s*.12;
-  piv.add(arm); charGroup.add(piv);
-  return piv;
+  arm.position.y=-.28; arm.rotation.z=s*.12;
+  piv.add(arm); charGroup.add(piv); return piv;
 });
-
-// leg pivots — rotate from hip so foot swings naturally
 const legPivots=[-1,1].map(s=>{
-  const piv=new THREE.Group();
-  piv.position.set(s*.16,.62,0);            // hip position
+  const piv=new THREE.Group(); piv.position.set(s*.16,.62,0);
   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.42,4,6),bodyMat);
-  leg.position.y=-.33;                      // hang below hip
-  piv.add(leg); charGroup.add(piv);
-  return piv;
+  leg.position.y=-.33; piv.add(leg); charGroup.add(piv); return piv;
 });
-
-// glow
 const charGlow=new THREE.PointLight(0x4488ff,.7,6);
 charGlow.position.y=1.2; charGroup.add(charGlow);
 
@@ -491,88 +578,49 @@ charGlow.position.y=1.2; charGroup.add(charGlow);
 const artObjects=[];
 const loader=new THREE.TextureLoader();
 
-function makeArtGroup(fw, fh, borderMat, imgMesh, art){
+function makeArtGroup(fw,fh,borderMesh,imgMesh,art){
   const g=new THREE.Group();
-
-  // thin pole visible from far
-  const pole=new THREE.Mesh(
-    new THREE.CylinderGeometry(.025,.025,fh/2+.6,6),
-    new THREE.MeshBasicMaterial({color:0x223344})
-  );
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,fh/2+.6,6),new THREE.MeshBasicMaterial({color:0x223344}));
   pole.position.y=-(fh/2+.6)/2;
-
-  // glow orb at top of pole (always visible in fog)
-  const orb=new THREE.Mesh(
-    new THREE.SphereGeometry(.12,8,8),
-    new THREE.MeshStandardMaterial({color:0x88bbff,emissive:0x4488ff,emissiveIntensity:2})
-  );
-  orb.position.y=0.12;
-
-  // point light illuminates the frame from the front
+  const orbMat=new THREE.MeshStandardMaterial({color:0x88bbff,emissive:0x4488ff,emissiveIntensity:2});
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),orbMat);
+  orb.position.y=.12;
   const artLight=new THREE.PointLight(0xaaccff,3,18);
   artLight.position.set(0,0,1.2);
-
-  g.add(pole); g.add(orb); g.add(artLight);
-  g.add(borderMat);
+  g.add(pole); g.add(orb); g.add(artLight); g.add(borderMesh);
   if(imgMesh) g.add(imgMesh);
-
-  const [x,,z]=art.pos;
-  const baseY=fh/2+.48;
-  g.position.set(x,baseY,z);
-  g.rotation.y=art.rot;
+  const [x,,z]=art.pos, baseY=fh/2+.48;
+  g.position.set(x,baseY,z); g.rotation.y=art.rot;
   scene.add(g);
-  return {g,art,baseY,border:borderMat,artLight,orb};
+  return {g,art,baseY,border:borderMesh,artLight,orb};
 }
 
 function loadArtworks(){
   return Promise.all(ARTWORKS.map(art=>new Promise(res=>{
-    loader.load(art.src, tex=>{
+    loader.load(art.src,tex=>{
       const aspect=tex.image.naturalWidth/tex.image.naturalHeight||1;
-      const fh=2.9, fw=fh*aspect;
-
-      // emissive border — glows faintly from far
-      const border=new THREE.Mesh(
-        new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshStandardMaterial({
-          color:0xffffff,emissive:0xffffff,
-          emissiveIntensity:.5,side:THREE.DoubleSide
-        })
-      );
-      const img=new THREE.Mesh(
-        new THREE.PlaneGeometry(fw,fh),
-        new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide})
-      );
+      const fh=2.9,fw=fh*aspect;
+      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
+        new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.5,side:THREE.DoubleSide}));
+      const img=new THREE.Mesh(new THREE.PlaneGeometry(fw,fh),
+        new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
       img.position.z=.006;
-
-      artObjects.push(makeArtGroup(fw,fh,border,img,art));
-      res();
+      artObjects.push(makeArtGroup(fw,fh,border,img,art)); res();
     },undefined,()=>{
-      const fh=2.8, fw=2.8;
-      const border=new THREE.Mesh(
-        new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshStandardMaterial({
-          color:0x334455,emissive:0x112233,
-          emissiveIntensity:.4,side:THREE.DoubleSide
-        })
-      );
-      artObjects.push(makeArtGroup(fw,fh,border,null,art));
-      res();
+      const fh=2.8,fw=2.8;
+      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
+        new THREE.MeshStandardMaterial({color:0x334455,emissive:0x112233,emissiveIntensity:.4,side:THREE.DoubleSide}));
+      artObjects.push(makeArtGroup(fw,fh,border,null,art)); res();
     });
   })));
 }
 
-/* ════════════════════════════════════════
-   PORTFOLIO GRID
-════════════════════════════════════════ */
 function buildGrid(){
   const grid=document.getElementById('pgrid');
   ARTWORKS.forEach(art=>{
-    const el=document.createElement('div');
-    el.className='pitem';
-    el.innerHTML=`<img src="${art.src}" alt="${art.title}" loading="lazy">
-                  <div class="pitem-label">${art.title}</div>`;
-    el.onclick=()=>openLightbox(art.src,art.title);
-    grid.appendChild(el);
+    const el=document.createElement('div'); el.className='pitem';
+    el.innerHTML=`<img src="${art.src}" alt="${art.title}" loading="lazy"><div class="pitem-label">${art.title}</div>`;
+    el.onclick=()=>openLightbox(art.src,art.title); grid.appendChild(el);
   });
 }
 
@@ -580,19 +628,54 @@ function buildGrid(){
    AUDIO
 ════════════════════════════════════════ */
 let soundOn=false;
-const bgm=document.getElementById('bgm');
-bgm.volume=0.55;
+const ambient=document.getElementById('bgm-ambient');
+const noise=document.getElementById('bgm-noise');
+ambient.volume=0.6; noise.volume=0.08;
+
+const fsSounds=[0,1,2,3,4].map(i=>document.getElementById('fs'+i));
+fsSounds.forEach(a=>{ a.volume=0.35; });
+let lastStep=0, fsIdx=0;
+
+function playStep(now){
+  if(now-lastStep<420) return;
+  lastStep=now;
+  const s=fsSounds[fsIdx%fsSounds.length]; fsIdx++;
+  s.currentTime=0; s.play().catch(()=>{});
+}
 
 window.toggleSound=function(){
   soundOn=!soundOn;
   const btn=document.getElementById('audio-btn');
   if(soundOn){
-    bgm.play().catch(()=>{});
-    btn.classList.remove('off');
+    ambient.play().catch(()=>{});
+    noise.play().catch(()=>{});
+    btn.classList.replace('snd-off','snd-on');
   } else {
-    bgm.pause();
-    btn.classList.add('off');
+    ambient.pause(); noise.pause();
+    btn.classList.replace('snd-on','snd-off');
   }
+};
+
+/* ════════════════════════════════════════
+   CAMERA MODES
+════════════════════════════════════════ */
+let camMode=0; // 0=follow, 1=close, 2=FPV
+const CAM_ICONS=['◎','⊙','◉'];
+const CAM_OFFSETS=[[16,8.5,48],[9,5,36],[0,1.6,.2]];
+
+window.cycleCamera=function(){
+  camMode=(camMode+1)%3;
+  document.getElementById('cam-btn').textContent=CAM_ICONS[camMode];
+};
+
+/* ════════════════════════════════════════
+   QUALITY TOGGLE
+════════════════════════════════════════ */
+let hiQ=true;
+window.toggleQuality=function(){
+  hiQ=!hiQ;
+  renderer.setPixelRatio(hiQ?Math.min(devicePixelRatio,2):1);
+  document.getElementById('quality-btn').classList.toggle('quality-on',hiQ);
 };
 
 /* ════════════════════════════════════════
@@ -604,14 +687,13 @@ addEventListener('keyup',  e=>{K[e.code]=false});
 addEventListener('keydown',e=>{
   if(e.code==='Escape'){closeLightbox(true);closeAllPanels();}
   if(e.code==='KeyM') toggleSound();
+  if(e.code==='KeyC') cycleCamera();
 });
 
 /* ════════════════════════════════════════
    LIGHTBOX
 ════════════════════════════════════════ */
-let lbOpen=false;
-let lbArt=null;
-let lbCooldownUntil=0;
+let lbOpen=false, lbArt=null, lbCooldownUntil=0;
 
 window.openLightbox=function(src,title){
   document.getElementById('lb-img').src=src;
@@ -619,14 +701,11 @@ window.openLightbox=function(src,title){
   document.getElementById('lightbox').classList.add('on');
   lbOpen=true;
 };
-
 window.closeLightbox=function(manual=false){
   document.getElementById('lightbox').classList.remove('on');
-  lbOpen=false;
-  lbArt=null;
+  lbOpen=false; lbArt=null;
   if(manual) lbCooldownUntil=Date.now()+LB_COOLDOWN;
 };
-
 document.getElementById('lightbox').addEventListener('click',e=>{
   if(e.target===e.currentTarget) closeLightbox(true);
 });
@@ -648,63 +727,61 @@ let prevT=0;
 
 function animate(ms){
   requestAnimationFrame(animate);
-  const t=ms/1000;
-  const dt=Math.min(t-prevT,.1);
-  prevT=t;
+  const t=ms/1000, dt=Math.min(t-prevT,.1); prevT=t;
 
   uGrassT.value=t;
 
-  /* ── character movement ── */
+  /* ── movement ── */
   const running=K['ShiftLeft']||K['ShiftRight'];
   const spd=running?CHAR_RUN:CHAR_SPEED;
-
-  if(K['ArrowLeft'] ||K['KeyA']) charYaw.v+=CHAR_ROT*dt;
+  if(K['ArrowLeft']||K['KeyA'])  charYaw.v+=CHAR_ROT*dt;
   if(K['ArrowRight']||K['KeyD']) charYaw.v-=CHAR_ROT*dt;
   charGroup.rotation.y=charYaw.v;
 
   const fwd=new THREE.Vector3(-Math.sin(charYaw.v),0,-Math.cos(charYaw.v));
   const moving=K['ArrowUp']||K['KeyW']||K['ArrowDown']||K['KeyS'];
-
-  if(K['ArrowUp'] ||K['KeyW']) charGroup.position.addScaledVector(fwd, spd*dt);
+  if(K['ArrowUp']||K['KeyW'])   charGroup.position.addScaledVector(fwd, spd*dt);
   if(K['ArrowDown']||K['KeyS']) charGroup.position.addScaledVector(fwd,-spd*dt*.6);
 
-  // walk cycle frequencies and amplitudes
-  const freq = running ? 13 : 8;
-  const legAmp = running ? .58 : .44;
-  const armAmp = running ? .45 : .32;
+  /* ── walk animation ── */
+  const freq=running?13:8, legAmp=running?.58:.44, armAmp=running?.45:.32;
+  legPivots.forEach((p,i)=>{ p.rotation.x=moving?Math.sin(t*freq+i*Math.PI)*legAmp:0; });
+  armPivots.forEach((p,i)=>{ p.rotation.x=moving?Math.sin(t*freq+(1-i)*Math.PI)*armAmp:0; });
+  const bob=moving?Math.sin(t*freq*2)*.04:Math.sin(t*1.4)*.016;
+  charGroup.position.y=bob;
+  torso.rotation.x=moving&&running?-.2:0;
+  torso.rotation.z=moving?Math.sin(t*freq*.5)*.035:0;
 
-  // leg swing from hip pivot (opposite legs alternate)
-  legPivots.forEach((p,i)=>{
-    p.rotation.x = moving ? Math.sin(t*freq + i*Math.PI)*legAmp : 0;
-  });
-  // arm swing from shoulder pivot (opposite phase to legs)
-  armPivots.forEach((p,i)=>{
-    p.rotation.x = moving ? Math.sin(t*freq + (1-i)*Math.PI)*armAmp : 0;
-  });
-
-  // body bob and lean
-  const bob = moving ? Math.sin(t*freq*2)*.04 : Math.sin(t*1.4)*.016;
-  charGroup.position.y = bob;
-  torso.rotation.x = moving && running ? -.2 : 0;           // lean forward when running
-  torso.rotation.z = moving ? Math.sin(t*freq*.5)*.035 : 0; // side sway
+  /* ── footsteps ── */
+  if(moving&&soundOn) playStep(ms);
 
   /* ── visor pulse ── */
-  visor.material.emissiveIntensity=.9+Math.sin(t*2.1)*.35;
+  visorMat.emissiveIntensity=.9+Math.sin(t*2.1)*.35;
   charGlow.intensity=.55+Math.sin(t*2.1)*.25;
 
   /* ── camera ── */
-  const cx=charGroup.position.x+Math.sin(charYaw.v)*16;
-  const cy=charGroup.position.y+8.5;
-  const cz=charGroup.position.z+Math.cos(charYaw.v)*16;
-  camCur.lerp(new THREE.Vector3(cx,cy,cz),Math.min(1,4.5*dt));
+  const [zo,yo,zi]=CAM_OFFSETS[camMode];
+  let tx,ty,tz;
+  if(camMode===2){
+    // FPV: camera at visor
+    tx=charGroup.position.x - Math.sin(charYaw.v)*zi;
+    ty=charGroup.position.y + yo;
+    tz=charGroup.position.z - Math.cos(charYaw.v)*zi;
+  } else {
+    tx=charGroup.position.x+Math.sin(charYaw.v)*zo;
+    ty=charGroup.position.y+yo;
+    tz=charGroup.position.z+Math.cos(charYaw.v)*zo;
+  }
+  camCur.lerp(new THREE.Vector3(tx,ty,tz),Math.min(1,(camMode===2?8:4.5)*dt));
   camera.position.copy(camCur);
-  camTgt.copy(charGroup.position); camTgt.y+=1.3;
+  camTgt.copy(charGroup.position);
+  camTgt.y += camMode===2 ? 1.6 : 1.3;
   camera.lookAt(camTgt);
 
   /* ── grass uniform ── */
   uGrassChar.value.copy(charGroup.position);
 
-  /* ── artwork proximity + float ── */
+  /* ── artwork proximity ── */
   let nearest=null, minD=Infinity;
   const now=Date.now();
 
@@ -712,28 +789,19 @@ function animate(ms){
     ao.g.position.y=ao.baseY+Math.sin(t*.75+i*1.4)*.09;
     const d=charGroup.position.distanceTo(ao.g.position);
     if(d<minD){minD=d;nearest=ao;}
-
-    // orb pulse — always visible, speeds up when near
     const pulse=Math.sin(t*1.6+i*2.3)*.5+.5;
-    const nearFactor=Math.max(0,1-d/22);
-    ao.orb.material.emissiveIntensity=1.5+pulse*1.5+nearFactor*2;
-    ao.artLight.intensity=2+nearFactor*5+pulse*.8;
-
-    // border brightens as you approach
-    ao.border.material.emissiveIntensity=.35+nearFactor*.9;
+    const nf=Math.max(0,1-d/22);
+    ao.orb.material.emissiveIntensity=1.5+pulse*1.5+nf*2;
+    ao.artLight.intensity=2+nf*5+pulse*.8;
+    ao.border.material.emissiveIntensity=.35+nf*.9;
   });
 
-  // proximity hint
-  const artHintEl=document.getElementById('art-hint');
-  artHintEl.style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
+  document.getElementById('art-hint').style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
 
-  // open / close lightbox based on distance
-  if(!lbOpen && nearest && minD<ART_OPEN_D && now>lbCooldownUntil){
-    lbArt=nearest;
-    openLightbox(nearest.art.src, nearest.art.title);
-  } else if(lbOpen && lbArt){
-    const d=charGroup.position.distanceTo(lbArt.g.position);
-    if(d>ART_CLOSE_D) closeLightbox(false);
+  if(!lbOpen&&nearest&&minD<ART_OPEN_D&&now>lbCooldownUntil){
+    lbArt=nearest; openLightbox(nearest.art.src,nearest.art.title);
+  } else if(lbOpen&&lbArt){
+    if(charGroup.position.distanceTo(lbArt.g.position)>ART_CLOSE_D) closeLightbox(false);
   }
 
   renderer.render(scene,camera);
@@ -744,25 +812,17 @@ function animate(ms){
 ════════════════════════════════════════ */
 async function init(){
   buildGrid();
-
-  const btn=document.getElementById('start-btn');
-  const pb=document.getElementById('pbar');
-
-  // fake progress while loading textures
+  const btn=document.getElementById('start-btn'), pb=document.getElementById('pbar');
   let p=0;
-  const iv=setInterval(()=>{
-    p=Math.min(p+Math.random()*18,88);
-    pb.style.width=p+'%';
-  },180);
+  const iv=setInterval(()=>{ p=Math.min(p+Math.random()*18,88); pb.style.width=p+'%';
+    btn.textContent=`${p<50?'LOADING':'CALIBRATING'}… ${Math.round(p)}%`; },180);
 
   await loadArtworks();
+  clearInterval(iv); pb.style.width='100%';
 
-  clearInterval(iv);
-  pb.style.width='100%';
   setTimeout(()=>{
-    btn.textContent='[ Enter ]';
-    btn.disabled=false;
-    btn.style.animation='breathe 2s infinite ease-in-out';
+    btn.textContent='[ START ]';
+    btn.classList.add('ready');
   },350);
 
   btn.addEventListener('click',()=>{
@@ -770,14 +830,14 @@ async function init(){
     ld.style.opacity='0';
     setTimeout(()=>ld.style.display='none',1450);
 
-    document.getElementById('site-name').style.opacity='1';
-    document.getElementById('ig-corner').style.opacity='1';
-    document.getElementById('audio-btn').style.opacity='1';
+    ['site-name','ig-corner','audio-btn','sidebar'].forEach(id=>{
+      document.getElementById(id).style.opacity='1';
+    });
 
     setTimeout(()=>{
       const h=document.getElementById('hint');
       h.style.opacity='1';
-      setTimeout(()=>{h.style.transition='opacity 3.5s';h.style.opacity='0';},6000);
+      setTimeout(()=>{ h.style.transition='opacity 3.5s'; h.style.opacity='0'; },7000);
     },1800);
 
     requestAnimationFrame(animate);
