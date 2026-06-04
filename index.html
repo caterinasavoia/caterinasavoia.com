@@ -256,7 +256,7 @@ const ARTWORKS = [
 ════════════════════════════════════════ */
 const scene    = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog        = new THREE.FogExp2(0x000000, 0.022);
+scene.fog        = new THREE.FogExp2(0x000000, 0.013);
 
 const camera = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 0.1, 200);
 camera.position.set(0, 9, 17);
@@ -392,7 +392,7 @@ const grassMesh=new THREE.InstancedMesh(bladeGeo(),grassMat,GRASS_COUNT);
 scene.add(grassMesh);
 
 /* ════════════════════════════════════════
-   CHARACTER (astronaut silhouette)
+   CHARACTER (astronaut — pivot-based rig)
 ════════════════════════════════════════ */
 const charGroup=new THREE.Group();
 scene.add(charGroup);
@@ -400,7 +400,7 @@ scene.add(charGroup);
 const bodyMat=new THREE.MeshStandardMaterial({color:0xdde8f0,emissive:0x223344,roughness:.35,metalness:.7});
 const headMat=new THREE.MeshStandardMaterial({color:0xccddee,emissive:0x445566,roughness:.25,metalness:.75});
 
-// torso
+// torso (tilts forward when running)
 const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.27,.58,4,8),bodyMat);
 torso.position.y=.9; charGroup.add(torso);
 // head
@@ -412,16 +412,28 @@ const visor=new THREE.Mesh(
   new THREE.MeshStandardMaterial({color:0x2277ff,emissive:0x0055ee,emissiveIntensity:1.2,transparent:true,opacity:.55})
 );
 visor.position.set(0,1.6,.04); charGroup.add(visor);
-// arms
-[-1,1].forEach(s=>{
+
+// arm pivots — rotate from shoulder so full arm swings naturally
+const armPivots=[-1,1].map(s=>{
+  const piv=new THREE.Group();
+  piv.position.set(s*.42,1.15,0);          // shoulder position
   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.4,4,6),bodyMat);
-  arm.position.set(s*.4,.9,.0); arm.rotation.z=s*.35; charGroup.add(arm);
+  arm.position.y=-.28;                      // hang below shoulder
+  arm.rotation.z=s*.12;
+  piv.add(arm); charGroup.add(piv);
+  return piv;
 });
-// legs
-[-1,1].forEach(s=>{
+
+// leg pivots — rotate from hip so foot swings naturally
+const legPivots=[-1,1].map(s=>{
+  const piv=new THREE.Group();
+  piv.position.set(s*.16,.62,0);            // hip position
   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.42,4,6),bodyMat);
-  leg.position.set(s*.16,.35,0); charGroup.add(leg);
+  leg.position.y=-.33;                      // hang below hip
+  piv.add(leg); charGroup.add(piv);
+  return piv;
 });
+
 // glow
 const charGlow=new THREE.PointLight(0x4488ff,.7,6);
 charGlow.position.y=1.2; charGroup.add(charGlow);
@@ -432,52 +444,71 @@ charGlow.position.y=1.2; charGroup.add(charGlow);
 const artObjects=[];
 const loader=new THREE.TextureLoader();
 
+function makeArtGroup(fw, fh, borderMat, imgMesh, art){
+  const g=new THREE.Group();
+
+  // thin pole visible from far
+  const pole=new THREE.Mesh(
+    new THREE.CylinderGeometry(.025,.025,fh/2+.6,6),
+    new THREE.MeshBasicMaterial({color:0x223344})
+  );
+  pole.position.y=-(fh/2+.6)/2;
+
+  // glow orb at top of pole (always visible in fog)
+  const orb=new THREE.Mesh(
+    new THREE.SphereGeometry(.12,8,8),
+    new THREE.MeshStandardMaterial({color:0x88bbff,emissive:0x4488ff,emissiveIntensity:2})
+  );
+  orb.position.y=0.12;
+
+  // point light illuminates the frame from the front
+  const artLight=new THREE.PointLight(0xaaccff,3,18);
+  artLight.position.set(0,0,1.2);
+
+  g.add(pole); g.add(orb); g.add(artLight);
+  g.add(borderMat);
+  if(imgMesh) g.add(imgMesh);
+
+  const [x,,z]=art.pos;
+  const baseY=fh/2+.48;
+  g.position.set(x,baseY,z);
+  g.rotation.y=art.rot;
+  scene.add(g);
+  return {g,art,baseY,border:borderMat,artLight,orb};
+}
+
 function loadArtworks(){
   return Promise.all(ARTWORKS.map(art=>new Promise(res=>{
     loader.load(art.src, tex=>{
       const aspect=tex.image.naturalWidth/tex.image.naturalHeight||1;
       const fh=2.9, fw=fh*aspect;
 
-      const g=new THREE.Group();
-
-      // white border
+      // emissive border — glows faintly from far
       const border=new THREE.Mesh(
         new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide})
+        new THREE.MeshStandardMaterial({
+          color:0xffffff,emissive:0xffffff,
+          emissiveIntensity:.5,side:THREE.DoubleSide
+        })
       );
-      // image
       const img=new THREE.Mesh(
         new THREE.PlaneGeometry(fw,fh),
         new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide})
       );
-      img.position.z=.005;
+      img.position.z=.006;
 
-      g.add(border);g.add(img);
-      const [x,,z]=art.pos;
-      g.position.set(x,fh/2+.45,z);
-      g.rotation.y=art.rot;
-      scene.add(g);
-
-      artObjects.push({g,art,baseY:fh/2+.45,border});
+      artObjects.push(makeArtGroup(fw,fh,border,img,art));
       res();
     },undefined,()=>{
-      // placeholder if image fails
-      const g=new THREE.Group();
-      const ph=new THREE.Mesh(
-        new THREE.PlaneGeometry(2.6,2.6),
-        new THREE.MeshBasicMaterial({color:0x0a0a0a,side:THREE.DoubleSide})
+      const fh=2.8, fw=2.8;
+      const border=new THREE.Mesh(
+        new THREE.PlaneGeometry(fw+.18,fh+.18),
+        new THREE.MeshStandardMaterial({
+          color:0x334455,emissive:0x112233,
+          emissiveIntensity:.4,side:THREE.DoubleSide
+        })
       );
-      const brd=new THREE.Mesh(
-        new THREE.PlaneGeometry(2.75,2.75),
-        new THREE.MeshBasicMaterial({color:0x1a1a1a,side:THREE.DoubleSide})
-      );
-      brd.position.z=-.005;
-      g.add(brd);g.add(ph);
-      const [x,,z]=art.pos;
-      g.position.set(x,1.8,z);
-      g.rotation.y=art.rot;
-      scene.add(g);
-      artObjects.push({g,art,baseY:1.8,border:brd});
+      artObjects.push(makeArtGroup(fw,fh,border,null,art));
       res();
     });
   })));
@@ -570,14 +601,25 @@ function animate(ms){
   if(K['ArrowUp'] ||K['KeyW']) charGroup.position.addScaledVector(fwd, spd*dt);
   if(K['ArrowDown']||K['KeyS']) charGroup.position.addScaledVector(fwd,-spd*dt*.6);
 
-  // idle/walk bob
-  const bob=moving ? Math.sin(t*(running?14:9))*.055 : Math.sin(t*1.4)*.018;
-  charGroup.position.y=bob;
-  torso.rotation.z=moving ? Math.sin(t*(running?7:4.5))*.04 : 0;
-  // legs swing
-  charGroup.children.filter((_,i)=>i>4&&i<7).forEach((leg,i)=>{
-    leg.rotation.x=moving?Math.sin(t*(running?14:9)+i*Math.PI)*.35:0;
+  // walk cycle frequencies and amplitudes
+  const freq = running ? 13 : 8;
+  const legAmp = running ? .58 : .44;
+  const armAmp = running ? .45 : .32;
+
+  // leg swing from hip pivot (opposite legs alternate)
+  legPivots.forEach((p,i)=>{
+    p.rotation.x = moving ? Math.sin(t*freq + i*Math.PI)*legAmp : 0;
   });
+  // arm swing from shoulder pivot (opposite phase to legs)
+  armPivots.forEach((p,i)=>{
+    p.rotation.x = moving ? Math.sin(t*freq + (1-i)*Math.PI)*armAmp : 0;
+  });
+
+  // body bob and lean
+  const bob = moving ? Math.sin(t*freq*2)*.04 : Math.sin(t*1.4)*.016;
+  charGroup.position.y = bob;
+  torso.rotation.x = moving && running ? -.2 : 0;           // lean forward when running
+  torso.rotation.z = moving ? Math.sin(t*freq*.5)*.035 : 0; // side sway
 
   /* ── visor pulse ── */
   visor.material.emissiveIntensity=.9+Math.sin(t*2.1)*.35;
@@ -604,10 +646,14 @@ function animate(ms){
     const d=charGroup.position.distanceTo(ao.g.position);
     if(d<minD){minD=d;nearest=ao;}
 
-    // glow rim based on proximity
-    const glow=Math.max(0,1-d/(ART_CLOSE_D*1.4));
-    const c=ao.border.material.color;
-    c.setRGB(1,1-glow*.25,1-glow*.38);
+    // orb pulse — always visible, speeds up when near
+    const pulse=Math.sin(t*1.6+i*2.3)*.5+.5;
+    const nearFactor=Math.max(0,1-d/22);
+    ao.orb.material.emissiveIntensity=1.5+pulse*1.5+nearFactor*2;
+    ao.artLight.intensity=2+nearFactor*5+pulse*.8;
+
+    // border brightens as you approach
+    ao.border.material.emissiveIntensity=.35+nearFactor*.9;
   });
 
   // proximity hint
