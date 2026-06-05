@@ -211,6 +211,28 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 }
 .clink:hover{color:#fff}
 
+/* ─── PDF OVERLAY ─── */
+#pdf-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.93);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:600;opacity:0;pointer-events:none;transition:opacity .5s;gap:28px;
+}
+#pdf-overlay.on{opacity:1;pointer-events:auto}
+#pdf-title{font-size:clamp(14px,2vw,22px);letter-spacing:8px;text-transform:uppercase;font-weight:normal;}
+#pdf-link{
+  font-size:11px;letter-spacing:4px;text-transform:uppercase;
+  color:rgba(255,255,255,.6);text-decoration:none;
+  border:1px solid rgba(255,255,255,.25);padding:12px 36px;
+  transition:all .3s;
+}
+#pdf-link:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.05)}
+#pdf-close{
+  position:absolute;top:26px;right:32px;background:none;border:none;
+  color:rgba(255,255,255,.35);cursor:pointer;font-family:'Cousine','Courier New',monospace;
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;transition:color .3s;
+}
+#pdf-close:hover{color:#fff}
+
 @keyframes breathe{0%,100%{opacity:.6}50%{opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
@@ -273,6 +295,13 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 <!-- ══ HINTS ══ -->
 <div id="hint">WASD / ↑↓←→  MOVE &nbsp;·&nbsp; SHIFT  RUN &nbsp;·&nbsp; C  CAM &nbsp;·&nbsp; DISCOVER ARTWORKS IN THE FIELD</div>
 <div id="art-hint">· WALK CLOSER TO DISCOVER ·</div>
+
+<!-- ══ PDF OVERLAY ══ -->
+<div id="pdf-overlay">
+  <button id="pdf-close" onclick="closePDF()">[ CLOSE ]</button>
+  <div id="pdf-title"></div>
+  <a id="pdf-link" href="#" target="_blank">[ OPEN DOCUMENT ]</a>
+</div>
 
 <!-- ══ LIGHTBOX ══ -->
 <div id="lightbox">
@@ -562,7 +591,7 @@ function buildGrid(){
     el.innerHTML=`<img src="${art.src}" alt="${art.title}" loading="lazy"><div class="pitem-label">${art.title}</div>`;
     if(art.isPDF){
       el.innerHTML=`<div style="width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;font-size:28px;letter-spacing:2px;color:rgba(255,255,255,.3);">PDF</div><div class="pitem-label">${art.title}</div>`;
-      el.onclick=()=>window.open(art.src,'_blank');
+      el.onclick=()=>openPDF(art.src,art.title);
     }
     grid.appendChild(el);
   });
@@ -629,7 +658,7 @@ const K={};
 addEventListener('keydown',e=>{K[e.code]=true});
 addEventListener('keyup',  e=>{K[e.code]=false});
 addEventListener('keydown',e=>{
-  if(e.code==='Escape'){closeLightbox(true);closeAllPanels();}
+  if(e.code==='Escape'){closeLightbox(true);closePDF();closeAllPanels();}
   if(lbOpen){
     if(e.code==='ArrowLeft')  galleryNav(-1);
     if(e.code==='ArrowRight') galleryNav(1);
@@ -654,6 +683,18 @@ function showGalImg(idx){
 }
 
 window.galleryNav=function(dir){ showGalImg(galIdx+dir); };
+
+window.openPDF=function(src,title){
+  document.getElementById('pdf-title').textContent=title;
+  document.getElementById('pdf-link').href=src;
+  document.getElementById('pdf-overlay').classList.add('on');
+  lbOpen=true;
+};
+window.closePDF=function(){
+  document.getElementById('pdf-overlay').classList.remove('on');
+  lbOpen=false; lbArt=null;
+  lbCooldownUntil=Date.now()+LB_COOLDOWN;
+};
 
 window.openLightbox=function(src,title,images=null){
   galImgs=images||[src]; galIdx=0;
@@ -767,7 +808,7 @@ function animate(ms){
 
   if(!lbOpen&&nearest&&minD<ART_OPEN_D&&now>lbCooldownUntil){
     lbArt=nearest;
-    if(nearest.art.isPDF){ window.open(nearest.art.src,'_blank'); lbCooldownUntil=Date.now()+LB_COOLDOWN; }
+    if(nearest.art.isPDF){ openPDF(nearest.art.src,nearest.art.title); }
     else openLightbox(nearest.art.src,nearest.art.title,nearest.art.gallery||null);
   } else if(lbOpen&&lbArt){
     if(charGroup.position.distanceTo(lbArt.g.position)>ART_CLOSE_D) closeLightbox(false);
