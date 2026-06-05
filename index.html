@@ -349,8 +349,6 @@ const ARTWORKS = [
     title:'AG II — Material Exploration', pos:[17,0,-11], rot:-0.4 },
   { src:'portfolio/product%20design/Concept%20e%20moodboard%20copia%202.jpg',
     title:'Concept & Moodboard', pos:[-11,0,17], rot:0.18 },
-  { src:'portfolio/product%20design/Zfold-Hanging-Brochure-Stationery-Mockup%20copia%205.jpg',
-    title:'Z-Fold Brochure', pos:[15,0,15], rot:-0.22 },
   { src:'portfolio/product%20design/flebosauro/45c4572f-7e2e-4303-9eb8-964b17a25fae.png',
     title:'Flebosauro', pos:[0,0,-20], rot:0,
     gallery:[
@@ -553,7 +551,7 @@ function buildGrid(){
   ARTWORKS.forEach(art=>{
     const el=document.createElement('div'); el.className='pitem';
     el.innerHTML=`<img src="${art.src}" alt="${art.title}" loading="lazy"><div class="pitem-label">${art.title}</div>`;
-    el.onclick=()=>openLightbox(art.src,art.title); grid.appendChild(el);
+    el.onclick=()=>openLightbox(art.src,art.title,art.gallery||null); grid.appendChild(el);
   });
 }
 
