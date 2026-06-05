@@ -349,6 +349,8 @@ const ARTWORKS = [
     title:'AG II — Material Exploration', pos:[17,0,-11], rot:-0.4 },
   { src:'portfolio/product%20design/Concept%20e%20moodboard%20copia%202.jpg',
     title:'Concept & Moodboard', pos:[-11,0,17], rot:0.18 },
+  { src:'portfolio/product%20design/Autocad-Layout2-Recuperato%20copia.pdf',
+    title:'AutoCAD Layout', pos:[-18,0,4], rot:0.5, isPDF:true },
   { src:'portfolio/product%20design/flebosauro/45c4572f-7e2e-4303-9eb8-964b17a25fae.png',
     title:'Flebosauro', pos:[0,0,-20], rot:0,
     gallery:[
@@ -528,6 +530,13 @@ function makeArtGroup(fw,fh,borderMesh,imgMesh,art){
 
 function loadArtworks(){
   return Promise.all(ARTWORKS.map(art=>new Promise(res=>{
+    if(art.isPDF){
+      const fh=2.8,fw=2.0;
+      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
+        new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xdddddd,emissiveIntensity:.4,side:THREE.DoubleSide}));
+      artObjects.push(makeArtGroup(fw,fh,border,null,art));
+      return res();
+    }
     loader.load(art.src,tex=>{
       const aspect=tex.image.naturalWidth/tex.image.naturalHeight||1;
       const fh=2.9,fw=fh*aspect;
@@ -551,7 +560,11 @@ function buildGrid(){
   ARTWORKS.forEach(art=>{
     const el=document.createElement('div'); el.className='pitem';
     el.innerHTML=`<img src="${art.src}" alt="${art.title}" loading="lazy"><div class="pitem-label">${art.title}</div>`;
-    el.onclick=()=>openLightbox(art.src,art.title,art.gallery||null); grid.appendChild(el);
+    if(art.isPDF){
+      el.innerHTML=`<div style="width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:#0a0a0a;font-size:28px;letter-spacing:2px;color:rgba(255,255,255,.3);">PDF</div><div class="pitem-label">${art.title}</div>`;
+      el.onclick=()=>window.open(art.src,'_blank');
+    }
+    grid.appendChild(el);
   });
 }
 
@@ -753,7 +766,9 @@ function animate(ms){
   document.getElementById('art-hint').style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
 
   if(!lbOpen&&nearest&&minD<ART_OPEN_D&&now>lbCooldownUntil){
-    lbArt=nearest; openLightbox(nearest.art.src,nearest.art.title,nearest.art.gallery||null);
+    lbArt=nearest;
+    if(nearest.art.isPDF){ window.open(nearest.art.src,'_blank'); lbCooldownUntil=Date.now()+LB_COOLDOWN; }
+    else openLightbox(nearest.art.src,nearest.art.title,nearest.art.gallery||null);
   } else if(lbOpen&&lbArt){
     if(charGroup.position.distanceTo(lbArt.g.position)>ART_CLOSE_D) closeLightbox(false);
   }
