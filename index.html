@@ -152,6 +152,21 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
   transition:color .3s;
 }
 #lb-close:hover{color:#fff}
+#lb-prev,#lb-next{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(255,255,255,.4);
+  font-size:22px;cursor:pointer;padding:20px;
+  transition:color .25s;display:none;
+  font-family:'Cousine','Courier New',monospace;
+}
+#lb-prev{left:10px;}
+#lb-next{right:10px;}
+#lb-prev:hover,#lb-next:hover{color:#fff}
+#lb-footer{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;}
+#lb-counter{
+  font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.3);
+  font-family:'Cousine','Courier New',monospace;display:none;
+}
 
 /* ─── PANELS ─── */
 .panel{
@@ -262,8 +277,13 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 <!-- ══ LIGHTBOX ══ -->
 <div id="lightbox">
   <button id="lb-close" onclick="closeLightbox()">[ CLOSE ]</button>
+  <button id="lb-prev" onclick="galleryNav(-1)">←</button>
   <img id="lb-img" src="" alt="">
-  <div id="lb-title"></div>
+  <button id="lb-next" onclick="galleryNav(1)">→</button>
+  <div id="lb-footer">
+    <div id="lb-title"></div>
+    <div id="lb-counter"></div>
+  </div>
 </div>
 
 <!-- ══ BIO PANEL ══ -->
@@ -331,6 +351,14 @@ const ARTWORKS = [
     title:'Concept & Moodboard', pos:[-11,0,17], rot:0.18 },
   { src:'portfolio/product%20design/Zfold-Hanging-Brochure-Stationery-Mockup%20copia%205.jpg',
     title:'Z-Fold Brochure', pos:[15,0,15], rot:-0.22 },
+  { src:'portfolio/product%20design/flebosauro/45c4572f-7e2e-4303-9eb8-964b17a25fae.png',
+    title:'Flebosauro', pos:[0,0,-20], rot:0,
+    gallery:[
+      'portfolio/product%20design/flebosauro/45c4572f-7e2e-4303-9eb8-964b17a25fae.png',
+      'portfolio/product%20design/flebosauro/image-1%20(13).png',
+      'portfolio/product%20design/flebosauro/image-3%20(6).png',
+      'portfolio/product%20design/flebosauro/Zfold-Hanging-Brochure-Stationery-Mockup%20copia%205.jpg',
+    ]},
 ];
 
 /* ════════════════════════════════════════
@@ -591,18 +619,41 @@ addEventListener('keydown',e=>{K[e.code]=true});
 addEventListener('keyup',  e=>{K[e.code]=false});
 addEventListener('keydown',e=>{
   if(e.code==='Escape'){closeLightbox(true);closeAllPanels();}
+  if(lbOpen){
+    if(e.code==='ArrowLeft')  galleryNav(-1);
+    if(e.code==='ArrowRight') galleryNav(1);
+    return; // blocca tutto il resto quando il lightbox è aperto
+  }
   if(e.code==='KeyM') toggleSound();
   if(e.code==='KeyC') cycleCamera();
 });
 
 /* ════════════════════════════════════════
-   LIGHTBOX
+   LIGHTBOX + GALLERY
 ════════════════════════════════════════ */
 let lbOpen=false, lbArt=null, lbCooldownUntil=0;
+let galImgs=[], galIdx=0;
 
-window.openLightbox=function(src,title){
-  document.getElementById('lb-img').src=src;
+function showGalImg(idx){
+  galIdx=(idx+galImgs.length)%galImgs.length;
+  const img=document.getElementById('lb-img');
+  img.style.opacity='0';
+  setTimeout(()=>{ img.src=galImgs[galIdx]; img.style.opacity='1'; },150);
+  document.getElementById('lb-counter').textContent=`${galIdx+1} / ${galImgs.length}`;
+}
+
+window.galleryNav=function(dir){ showGalImg(galIdx+dir); };
+
+window.openLightbox=function(src,title,images=null){
+  galImgs=images||[src]; galIdx=0;
+  const multi=galImgs.length>1;
+  document.getElementById('lb-prev').style.display=multi?'block':'none';
+  document.getElementById('lb-next').style.display=multi?'block':'none';
+  document.getElementById('lb-counter').style.display=multi?'block':'none';
+  document.getElementById('lb-img').style.transition='opacity .15s';
+  document.getElementById('lb-img').src=galImgs[0];
   document.getElementById('lb-title').textContent=title;
+  document.getElementById('lb-counter').textContent=multi?`1 / ${galImgs.length}`:'';
   document.getElementById('lightbox').classList.add('on');
   lbOpen=true;
 };
@@ -704,7 +755,7 @@ function animate(ms){
   document.getElementById('art-hint').style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
 
   if(!lbOpen&&nearest&&minD<ART_OPEN_D&&now>lbCooldownUntil){
-    lbArt=nearest; openLightbox(nearest.art.src,nearest.art.title);
+    lbArt=nearest; openLightbox(nearest.art.src,nearest.art.title,nearest.art.gallery||null);
   } else if(lbOpen&&lbArt){
     if(charGroup.position.distanceTo(lbArt.g.position)>ART_CLOSE_D) closeLightbox(false);
   }
