@@ -16,7 +16,7 @@ html,body{
   width:100%;height:100%;background:#000;overflow:hidden;
   font-family:'Cousine','Courier New',monospace;color:#fff;
 }
-canvas{display:block;position:fixed;top:0;left:0;z-index:0}
+canvas{display:block;position:fixed;top:0;left:0;z-index:0;touch-action:none}
 
 /* ─── LOADING ─── */
 #loading{
@@ -236,6 +236,41 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 @keyframes breathe{0%,100%{opacity:.6}50%{opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
+/* ─── D-PAD ─── */
+#dpad{
+  position:fixed;
+  bottom:calc(26px + env(safe-area-inset-bottom, 0px));
+  left:50%;transform:translateX(-50%);
+  z-index:200;opacity:0;transition:opacity 1.2s;
+  pointer-events:auto;touch-action:none;
+  user-select:none;-webkit-user-select:none;
+}
+#dpad-grid{
+  display:grid;
+  grid-template-columns:repeat(3,46px);
+  grid-template-rows:repeat(2,38px);
+  gap:4px;
+}
+.dpad-btn{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.16);
+  color:rgba(255,255,255,.4);
+  cursor:pointer;
+  font-family:'Cousine','Courier New',monospace;
+  font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:2px;
+  touch-action:none;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  transition:background .1s,color .1s,border-color .1s;
+}
+.dpad-btn.pressed{
+  background:rgba(255,255,255,.11);
+  color:rgba(255,255,255,.85);
+  border-color:rgba(255,255,255,.38);
+}
+
 /* ─── MOBILE ─── */
 @media(max-width:600px),(max-height:500px){
   .entry{flex-direction:column;gap:30px;padding:20px;}
@@ -295,6 +330,18 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0}
 <!-- ══ HINTS ══ -->
 <div id="hint">WASD / ↑↓←→  MOVE &nbsp;·&nbsp; SHIFT  RUN &nbsp;·&nbsp; C  CAM &nbsp;·&nbsp; DISCOVER ARTWORKS IN THE FIELD</div>
 <div id="art-hint">· WALK CLOSER TO DISCOVER ·</div>
+
+<!-- ══ D-PAD ══ -->
+<div id="dpad">
+  <div id="dpad-grid">
+    <div></div>
+    <button class="dpad-btn" data-key="ArrowUp">↑</button>
+    <div></div>
+    <button class="dpad-btn" data-key="ArrowLeft">←</button>
+    <button class="dpad-btn" data-key="ArrowDown">↓</button>
+    <button class="dpad-btn" data-key="ArrowRight">→</button>
+  </div>
+</div>
 
 <!-- ══ PDF OVERLAY ══ -->
 <div id="pdf-overlay">
@@ -669,6 +716,63 @@ addEventListener('keydown',e=>{
 });
 
 /* ════════════════════════════════════════
+   D-PAD
+════════════════════════════════════════ */
+const dpadBtns=new Map();
+document.querySelectorAll('.dpad-btn').forEach(btn=>dpadBtns.set(btn.dataset.key,btn));
+
+function dpadSet(key,val){
+  if(!key)return;
+  K[key]=val;
+  const b=dpadBtns.get(key);
+  if(b)b.classList.toggle('pressed',val);
+}
+
+function keyAt(x,y){
+  const el=document.elementFromPoint(x,y);
+  return el&&el.classList.contains('dpad-btn')?el.dataset.key:null;
+}
+
+const touchKeys=new Map(); // touch id → key
+
+document.addEventListener('touchstart',e=>{
+  let hit=false;
+  for(const t of e.changedTouches){
+    const key=keyAt(t.clientX,t.clientY);
+    if(key){hit=true;touchKeys.set(t.identifier,key);dpadSet(key,true);}
+  }
+  if(hit)e.preventDefault();
+},{passive:false});
+
+document.addEventListener('touchmove',e=>{
+  for(const t of e.changedTouches){
+    const prev=touchKeys.get(t.identifier);
+    const next=keyAt(t.clientX,t.clientY);
+    if(prev===next)continue;
+    touchKeys.delete(t.identifier);
+    if(prev&&![...touchKeys.values()].includes(prev))dpadSet(prev,false);
+    if(next){touchKeys.set(t.identifier,next);dpadSet(next,true);}
+  }
+},{passive:true});
+
+function dpadTouchEnd(e){
+  for(const t of e.changedTouches){
+    const key=touchKeys.get(t.identifier);
+    touchKeys.delete(t.identifier);
+    if(key&&![...touchKeys.values()].includes(key))dpadSet(key,false);
+  }
+}
+document.addEventListener('touchend',   dpadTouchEnd);
+document.addEventListener('touchcancel',dpadTouchEnd);
+
+// mouse (desktop)
+dpadBtns.forEach((btn,key)=>{
+  btn.addEventListener('mousedown', ()=>dpadSet(key,true));
+  btn.addEventListener('mouseup',   ()=>dpadSet(key,false));
+  btn.addEventListener('mouseleave',()=>dpadSet(key,false));
+});
+
+/* ════════════════════════════════════════
    LIGHTBOX + GALLERY
 ════════════════════════════════════════ */
 let lbOpen=false, lbArt=null, lbCooldownUntil=0;
@@ -825,7 +929,7 @@ function enterWorld(){
   ld.style.opacity='0';
   setTimeout(()=>ld.style.display='none',1650);
 
-  ['site-name','ig-corner','audio-btn','sidebar'].forEach(id=>{
+  ['site-name','ig-corner','audio-btn','sidebar','dpad'].forEach(id=>{
     document.getElementById(id).style.opacity='1';
   });
 
