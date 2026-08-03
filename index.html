@@ -690,10 +690,25 @@ const visorMat=new THREE.MeshStandardMaterial({color:0x2277ff,emissive:0x0055ee,
 const visor=new THREE.Mesh(new THREE.SphereGeometry(.195,16,10,0,Math.PI*2,0,Math.PI*.52),visorMat);
 visor.position.set(0,1.6,.04); charGroup.add(visor);
 
+const saberHiltMat=new THREE.MeshStandardMaterial({color:0x333333,emissive:0x111111,roughness:.4,metalness:.8});
+const saberBladeMat=new THREE.MeshStandardMaterial({color:0xaaddff,emissive:0x66ccff,emissiveIntensity:2.6,transparent:true,opacity:.92});
+function makeSaber(){
+  const s=new THREE.Group();
+  const hilt=new THREE.Mesh(new THREE.CylinderGeometry(.024,.028,.16,8),saberHiltMat);
+  hilt.position.y=.08; s.add(hilt);
+  const blade=new THREE.Mesh(new THREE.CylinderGeometry(.016,.016,.85,8),saberBladeMat);
+  blade.position.y=.16+.85/2; s.add(blade);
+  const glow=new THREE.PointLight(0x66ccff,1.1,4);
+  glow.position.y=.16+.85/2; s.add(glow);
+  s.rotation.x=-Math.PI/2; s.position.y=-.29;
+  return s;
+}
+
 const armPivots=[-1,1].map(s=>{
   const piv=new THREE.Group(); piv.position.set(s*.42,1.15,0);
   const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.4,4,6),bodyMat);
   arm.position.y=-.28; arm.rotation.z=s*.12;
+  if(s===1) arm.add(makeSaber());
   piv.add(arm); charGroup.add(piv); return piv;
 });
 const legPivots=[-1,1].map(s=>{
@@ -967,6 +982,7 @@ function animate(ms){
   const t=ms/1000, dt=Math.min(t-prevT,.1); prevT=t;
 
   uGrassT.value=t;
+  saberBladeMat.emissiveIntensity=2.4+Math.sin(t*7.5)*.4;
 
   /* ── movement ── */
   const running=K['ShiftLeft']||K['ShiftRight'];
