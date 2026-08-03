@@ -527,17 +527,17 @@ function nearAnyPath(px,pz,margin){
   return false;
 }
 
-function makePathStrip(seg,width){
+function makePathStrip(seg,width,tileLen){
   const dx=seg.x2-seg.x1, dz=seg.z2-seg.z1, len=Math.hypot(dx,dz);
   const ux=dx/len, uz=dz/len, px=-uz, pz=ux, hw=width/2;
-  const y=-.012;
+  const y=-.012, vMax=len/tileLen;
   const verts=new Float32Array([
     seg.x1+px*hw, y, seg.z1+pz*hw,
     seg.x1-px*hw, y, seg.z1-pz*hw,
     seg.x2-px*hw, y, seg.z2-pz*hw,
     seg.x2+px*hw, y, seg.z2+pz*hw,
   ]);
-  const uvs=new Float32Array([0,0, 1,0, 1,1, 0,1]);
+  const uvs=new Float32Array([0,0, 1,0, 1,vMax, 0,vMax]);
   const idx=[0,1,2, 0,2,3];
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.BufferAttribute(verts,3));
@@ -546,19 +546,14 @@ function makePathStrip(seg,width){
   return g;
 }
 
-const pathFS=`
-varying vec2 vUv;
-void main(){
-  float edge=abs(vUv.x-.5)*2.0;
-  float a=1.0-smoothstep(.72,1.0,edge);
-  vec3 col=mix(vec3(.10,.085,.065),vec3(.16,.135,.10),1.0-vUv.x*.3);
-  gl_FragColor=vec4(col,a*.92);
-}`;
-const pathVS=`varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.0);}`;
-const pathMat=new THREE.ShaderMaterial({vertexShader:pathVS,fragmentShader:pathFS,transparent:true,side:THREE.DoubleSide});
-
-PATH_SEGMENTS.forEach(seg=>{
-  scene.add(new THREE.Mesh(makePathStrip(seg,PATH_WIDTH),pathMat));
+new THREE.TextureLoader().load('assets/vialetto.png',tex=>{
+  tex.wrapS=THREE.RepeatWrapping; tex.wrapT=THREE.RepeatWrapping;
+  const aspect=(tex.image.naturalWidth/tex.image.naturalHeight)||1.5;
+  const tileLen=PATH_WIDTH/aspect;
+  const pathMat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,color:0x666c62});
+  PATH_SEGMENTS.forEach(seg=>{
+    scene.add(new THREE.Mesh(makePathStrip(seg,PATH_WIDTH,tileLen),pathMat));
+  });
 });
 
 /* ════════════════════════════════════════
