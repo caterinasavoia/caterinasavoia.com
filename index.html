@@ -469,6 +469,16 @@ const KIOSK_POSTERS = [
   'portfolio/chiosco/harley-ivy.jpg',
 ];
 
+/* every destination is a kiosk booth — one per folder, plus the fan art shop */
+const BOOTHS = [
+  ...ARTWORKS.map(a=>({
+    title:a.title, pos:a.pos,
+    posters:a.isPDF?[]:(a.gallery||[a.src]),
+    isPDF:!!a.isPDF, pdfSrc:a.isPDF?a.src:null,
+  })),
+  { title:KIOSK_TITLE, pos:KIOSK_POS, posters:KIOSK_POSTERS, isPDF:false, pdfSrc:null },
+];
+
 /* ════════════════════════════════════════
    RENDERER / SCENE / CAMERA
 ════════════════════════════════════════ */
@@ -517,18 +527,17 @@ scene.add(dir);
 }
 
 /* ════════════════════════════════════════
-   PATHS — neon trails from a central plaza to each artwork
+   PATHS — neon trails from a central plaza to each booth
 ════════════════════════════════════════ */
 const uGrassT={value:0}, uGrassChar={value:new THREE.Vector3()};
 const PLAZA_RADIUS = 3.4;
+const BOOTH_CLEAR = 4.4;
 
 function plazaSeg(tx,tz){
   const d=Math.hypot(tx,tz)||1, ux=tx/d, uz=tz/d;
   return {x1:ux*PLAZA_RADIUS, z1:uz*PLAZA_RADIUS, x2:tx, z2:tz};
 }
-const PATH_SEGMENTS = ARTWORKS.map(a=>plazaSeg(a.pos[0],a.pos[2]));
-const KIOSK_CLEAR = 4.4;
-PATH_SEGMENTS.push(plazaSeg(KIOSK_POS[0],KIOSK_POS[2]));
+const PATH_SEGMENTS = BOOTHS.map(b=>plazaSeg(b.pos[0],b.pos[2]));
 
 function distToPathSeg(px,pz,seg){
   const dx=seg.x2-seg.x1, dz=seg.z2-seg.z1;
@@ -540,7 +549,7 @@ function distToPathSeg(px,pz,seg){
 }
 function nearAnyPath(px,pz,margin){
   if(Math.hypot(px,pz)<PLAZA_RADIUS+margin) return true;
-  if(Math.hypot(px-KIOSK_POS[0],pz-KIOSK_POS[2])<KIOSK_CLEAR+margin) return true;
+  for(const b of BOOTHS) if(Math.hypot(px-b.pos[0],pz-b.pos[2])<BOOTH_CLEAR+margin) return true;
   for(const seg of PATH_SEGMENTS) if(distToPathSeg(px,pz,seg)<margin) return true;
   return false;
 }
@@ -732,81 +741,52 @@ const charGlow=new THREE.PointLight(0x4488ff,.7,6);
 charGlow.position.y=1.2; charGroup.add(charGlow);
 
 /* ════════════════════════════════════════
-   ARTWORK FRAMES
+   BOOTHS — one cyberpunk kiosk per folder
 ════════════════════════════════════════ */
-const artObjects=[];
 const loader=new THREE.TextureLoader();
-let kioskHub=null;
+const boothHubs=[];
 
-function makeArtGroup(fw,fh,borderMesh,imgMesh,art){
-  const g=new THREE.Group();
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,fh/2+.6,6),new THREE.MeshBasicMaterial({color:0x223344}));
-  pole.position.y=-(fh/2+.6)/2;
-  const orbMat=new THREE.MeshStandardMaterial({color:0x88bbff,emissive:0x4488ff,emissiveIntensity:2});
-  const orb=new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),orbMat);
-  orb.position.y=.12;
-  const artLight=new THREE.PointLight(0xaaccff,3,18);
-  artLight.position.set(0,0,1.2);
-  g.add(pole); g.add(orb); g.add(artLight); g.add(borderMesh);
-  if(imgMesh) g.add(imgMesh);
-  const [x,,z]=art.pos, baseY=fh/2+.48;
-  g.position.set(x,baseY,z); g.rotation.y=Math.atan2(-x,-z);
-  scene.add(g);
-  return {g,art,baseY,border:borderMesh,artLight,orb};
-}
-
-function loadArtworks(){
-  return Promise.all(ARTWORKS.map(art=>new Promise(res=>{
-    if(art.isPDF){
-      const fh=2.8,fw=2.0;
-      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xdddddd,emissiveIntensity:.4,side:THREE.DoubleSide}));
-      artObjects.push(makeArtGroup(fw,fh,border,null,art));
-      return res();
-    }
-    loader.load(art.src,tex=>{
-      const aspect=tex.image.naturalWidth/tex.image.naturalHeight||1;
-      const fh=2.9,fw=fh*aspect;
-      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.5,side:THREE.DoubleSide}));
-      const img=new THREE.Mesh(new THREE.PlaneGeometry(fw,fh),
-        new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
-      img.position.z=.006;
-      artObjects.push(makeArtGroup(fw,fh,border,img,art)); res();
-    },undefined,()=>{
-      const fh=2.8,fw=2.8;
-      const border=new THREE.Mesh(new THREE.PlaneGeometry(fw+.18,fh+.18),
-        new THREE.MeshStandardMaterial({color:0x334455,emissive:0x112233,emissiveIntensity:.4,side:THREE.DoubleSide}));
-      artObjects.push(makeArtGroup(fw,fh,border,null,art)); res();
-    });
-  })));
-}
-
-/* ════════════════════════════════════════
-   KIOSK — cyberpunk fan-art shop
-════════════════════════════════════════ */
 function makeNeonSignTexture(text){
-  const c=document.createElement('canvas'); c.width=512; c.height=128;
+  const label=text.toUpperCase(), fontSpec='bold 56px "Cousine","Courier New",monospace';
+  const measure=document.createElement('canvas').getContext('2d');
+  measure.font=fontSpec;
+  const cw=Math.max(512,Math.ceil(measure.measureText(label).width+90));
+  const c=document.createElement('canvas'); c.width=cw; c.height=128;
   const ctx=c.getContext('2d');
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.font='bold 56px "Cousine","Courier New",monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=fontSpec;
   ctx.shadowColor='#ff2fb0'; ctx.shadowBlur=30;
   ctx.fillStyle='#ff7fd0';
-  ctx.fillText(text.toUpperCase(),c.width/2,c.height/2);
+  ctx.fillText(label,cw/2,64);
   ctx.shadowBlur=12;
   ctx.fillStyle='#fff2fa';
-  ctx.fillText(text.toUpperCase(),c.width/2,c.height/2);
+  ctx.fillText(label,cw/2,64);
   const tex=new THREE.CanvasTexture(c); tex.needsUpdate=true;
-  return tex;
+  return {tex,aspect:cw/128};
 }
 
-function buildKiosk(){
-  return Promise.all(KIOSK_POSTERS.map(src=>new Promise(res=>{
+function makePDFTileTexture(){
+  const c=document.createElement('canvas'); c.width=512; c.height=512;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,512,512);
+  ctx.fillStyle='rgba(255,255,255,.35)';
+  ctx.font='bold 96px "Cousine","Courier New",monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('PDF',256,256);
+  const tex=new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return {tex,aspect:1};
+}
+
+function loadBoothPosters(spec){
+  if(spec.isPDF) return Promise.resolve([makePDFTileTexture()]);
+  return Promise.all(spec.posters.map(src=>new Promise(res=>{
     loader.load(src,
       tex=>res({tex,aspect:(tex.image.naturalWidth/tex.image.naturalHeight)||.7}),
       undefined,()=>res(null));
-  }))).then(loaded=>{
-    const posters=loaded.filter(Boolean);
+  }))).then(list=>list.filter(Boolean));
+}
+
+function buildBooth(spec){
+  return loadBoothPosters(spec).then(posters=>{
     const g=new THREE.Group();
     const W=3.6,D=2.0,H=2.7;
 
@@ -835,8 +815,10 @@ function buildKiosk(){
     const counterTrim=new THREE.Mesh(new THREE.BoxGeometry(W,.03,.03),cyanMat);
     counterTrim.position.set(0,.76,D/2); g.add(counterTrim);
 
-    const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.62),
-      new THREE.MeshBasicMaterial({map:makeNeonSignTexture(KIOSK_TITLE),transparent:true,side:THREE.DoubleSide}));
+    const signTex=makeNeonSignTexture(spec.title);
+    const signH=.62, signW=signH*signTex.aspect;
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(signW,signH),
+      new THREE.MeshBasicMaterial({map:signTex.tex,transparent:true,side:THREE.DoubleSide}));
     sign.position.set(0,H+.5,D/2+.2); g.add(sign);
     const signLight=new THREE.PointLight(0xff2fb0,2.2,7);
     signLight.position.set(0,H+.5,D/2+.6); g.add(signLight);
@@ -861,11 +843,16 @@ function buildKiosk(){
       });
     }
 
-    const [x,,z]=KIOSK_POS;
+    const [x,,z]=spec.pos;
     g.position.set(x,0,z); g.rotation.y=Math.atan2(-x,-z);
     scene.add(g);
 
-    kioskHub={ g, art:{title:KIOSK_TITLE,src:KIOSK_POSTERS[0],gallery:KIOSK_POSTERS} };
+    boothHubs.push({ g, art:{
+      title:spec.title,
+      src:spec.isPDF?spec.pdfSrc:(spec.posters[0]||''),
+      gallery:spec.isPDF?null:spec.posters,
+      isPDF:spec.isPDF,
+    }});
   });
 }
 
@@ -1140,25 +1127,14 @@ function animate(ms){
   /* ── grass uniform ── */
   uGrassChar.value.copy(charGroup.position);
 
-  /* ── artwork proximity ── */
+  /* ── booth proximity ── */
   let nearest=null, minD=Infinity;
   const now=Date.now();
 
-  artObjects.forEach((ao,i)=>{
-    ao.g.position.y=ao.baseY+Math.sin(t*.75+i*1.4)*.09;
-    const d=charGroup.position.distanceTo(ao.g.position);
-    if(d<minD){minD=d;nearest=ao;}
-    const pulse=Math.sin(t*1.6+i*2.3)*.5+.5;
-    const nf=Math.max(0,1-d/22);
-    ao.orb.material.emissiveIntensity=1.5+pulse*1.5+nf*2;
-    ao.artLight.intensity=2+nf*5+pulse*.8;
-    ao.border.material.emissiveIntensity=.35+nf*.9;
+  boothHubs.forEach(hub=>{
+    const d=charGroup.position.distanceTo(hub.g.position);
+    if(d<minD){minD=d;nearest=hub;}
   });
-
-  if(kioskHub){
-    const dK=charGroup.position.distanceTo(kioskHub.g.position);
-    if(dK<minD){minD=dK;nearest=kioskHub;}
-  }
 
   document.getElementById('art-hint').style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
 
@@ -1200,7 +1176,7 @@ async function init(){
   let p=0;
   const iv=setInterval(()=>{ p=Math.min(p+Math.random()*18,88); pb.style.width=p+'%'; },180);
 
-  await Promise.all([loadArtworks(), buildKiosk()]);
+  await Promise.all(BOOTHS.map(buildBooth));
   clearInterval(iv);
 
   // fill bar to 100% then auto-enter
