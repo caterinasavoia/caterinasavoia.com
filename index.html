@@ -693,13 +693,14 @@ visor.position.set(0,1.6,.04); charGroup.add(visor);
 const saberHiltMat=new THREE.MeshStandardMaterial({color:0x333333,emissive:0x111111,roughness:.4,metalness:.8});
 const saberBladeMat=new THREE.MeshStandardMaterial({color:0xaaddff,emissive:0x66ccff,emissiveIntensity:2.6,transparent:true,opacity:.92});
 function makeSaber(){
+  const sc=1.7, hiltLen=.16*sc, bladeLen=.85*sc;
   const s=new THREE.Group();
-  const hilt=new THREE.Mesh(new THREE.CylinderGeometry(.024,.028,.16,8),saberHiltMat);
-  hilt.position.y=.08; s.add(hilt);
-  const blade=new THREE.Mesh(new THREE.CylinderGeometry(.016,.016,.85,8),saberBladeMat);
-  blade.position.y=.16+.85/2; s.add(blade);
-  const glow=new THREE.PointLight(0x66ccff,1.1,4);
-  glow.position.y=.16+.85/2; s.add(glow);
+  const hilt=new THREE.Mesh(new THREE.CylinderGeometry(.024*sc,.028*sc,hiltLen,8),saberHiltMat);
+  hilt.position.y=hiltLen/2; s.add(hilt);
+  const blade=new THREE.Mesh(new THREE.CylinderGeometry(.016*sc,.016*sc,bladeLen,8),saberBladeMat);
+  blade.position.y=hiltLen+bladeLen/2; s.add(blade);
+  const glow=new THREE.PointLight(0x66ccff,1.4,6);
+  glow.position.y=hiltLen+bladeLen/2; s.add(glow);
   s.rotation.x=-Math.PI/2; s.position.y=-.29;
   return s;
 }
