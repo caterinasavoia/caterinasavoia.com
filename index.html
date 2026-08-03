@@ -462,6 +462,13 @@ const ARTWORKS = [
     ]},
 ];
 
+const KIOSK_POS = [22,0,3];
+const KIOSK_TITLE = 'Fan Art Shop';
+const KIOSK_POSTERS = [
+  'portfolio/chiosco/wonder-woman.jpg',
+  'portfolio/chiosco/harley-ivy.jpg',
+];
+
 /* ════════════════════════════════════════
    RENDERER / SCENE / CAMERA
 ════════════════════════════════════════ */
@@ -515,10 +522,13 @@ scene.add(dir);
 const uGrassT={value:0}, uGrassChar={value:new THREE.Vector3()};
 const PLAZA_RADIUS = 3.4;
 
-const PATH_SEGMENTS = ARTWORKS.map(a=>{
-  const [tx,,tz]=a.pos, d=Math.hypot(tx,tz)||1, ux=tx/d, uz=tz/d;
+function plazaSeg(tx,tz){
+  const d=Math.hypot(tx,tz)||1, ux=tx/d, uz=tz/d;
   return {x1:ux*PLAZA_RADIUS, z1:uz*PLAZA_RADIUS, x2:tx, z2:tz};
-});
+}
+const PATH_SEGMENTS = ARTWORKS.map(a=>plazaSeg(a.pos[0],a.pos[2]));
+const KIOSK_CLEAR = 4.4;
+PATH_SEGMENTS.push(plazaSeg(KIOSK_POS[0],KIOSK_POS[2]));
 
 function distToPathSeg(px,pz,seg){
   const dx=seg.x2-seg.x1, dz=seg.z2-seg.z1;
@@ -530,6 +540,7 @@ function distToPathSeg(px,pz,seg){
 }
 function nearAnyPath(px,pz,margin){
   if(Math.hypot(px,pz)<PLAZA_RADIUS+margin) return true;
+  if(Math.hypot(px-KIOSK_POS[0],pz-KIOSK_POS[2])<KIOSK_CLEAR+margin) return true;
   for(const seg of PATH_SEGMENTS) if(distToPathSeg(px,pz,seg)<margin) return true;
   return false;
 }
@@ -725,6 +736,7 @@ charGlow.position.y=1.2; charGroup.add(charGlow);
 ════════════════════════════════════════ */
 const artObjects=[];
 const loader=new THREE.TextureLoader();
+let kioskHub=null;
 
 function makeArtGroup(fw,fh,borderMesh,imgMesh,art){
   const g=new THREE.Group();
@@ -770,6 +782,93 @@ function loadArtworks(){
   })));
 }
 
+/* ════════════════════════════════════════
+   KIOSK — cyberpunk fan-art shop
+════════════════════════════════════════ */
+function makeNeonSignTexture(text){
+  const c=document.createElement('canvas'); c.width=512; c.height=128;
+  const ctx=c.getContext('2d');
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold 56px "Cousine","Courier New",monospace';
+  ctx.shadowColor='#ff2fb0'; ctx.shadowBlur=30;
+  ctx.fillStyle='#ff7fd0';
+  ctx.fillText(text.toUpperCase(),c.width/2,c.height/2);
+  ctx.shadowBlur=12;
+  ctx.fillStyle='#fff2fa';
+  ctx.fillText(text.toUpperCase(),c.width/2,c.height/2);
+  const tex=new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return tex;
+}
+
+function buildKiosk(){
+  return Promise.all(KIOSK_POSTERS.map(src=>new Promise(res=>{
+    loader.load(src,
+      tex=>res({tex,aspect:(tex.image.naturalWidth/tex.image.naturalHeight)||.7}),
+      undefined,()=>res(null));
+  }))).then(loaded=>{
+    const posters=loaded.filter(Boolean);
+    const g=new THREE.Group();
+    const W=3.6,D=2.0,H=2.7;
+
+    const wallMat=new THREE.MeshStandardMaterial({color:0x14141c,emissive:0x0a0a14,roughness:.6,metalness:.4});
+    const pinkMat=new THREE.MeshStandardMaterial({color:0xff2fb0,emissive:0xff2fb0,emissiveIntensity:1.6});
+    const cyanMat=new THREE.MeshStandardMaterial({color:0x33e6ff,emissive:0x33e6ff,emissiveIntensity:1.6});
+
+    const back=new THREE.Mesh(new THREE.BoxGeometry(W,H,.12),wallMat);
+    back.position.set(0,H/2,-D/2); g.add(back);
+
+    [-1,1].forEach(s=>{
+      const side=new THREE.Mesh(new THREE.BoxGeometry(.12,H,D),wallMat);
+      side.position.set(s*W/2,H/2,0); g.add(side);
+      const edge=new THREE.Mesh(new THREE.BoxGeometry(.04,H,.04),s<0?pinkMat:cyanMat);
+      edge.position.set(s*(W/2-.02),H/2,D/2-.02); g.add(edge);
+    });
+
+    const roofFrontZ=-.15+(D+.7)/2;
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(W+.5,.14,D+.7),wallMat);
+    roof.position.set(0,H+.07,-.15); g.add(roof);
+    const roofTrim=new THREE.Mesh(new THREE.BoxGeometry(W+.5,.05,.05),pinkMat);
+    roofTrim.position.set(0,H,roofFrontZ-.05); g.add(roofTrim);
+
+    const counter=new THREE.Mesh(new THREE.BoxGeometry(W,.12,.5),wallMat);
+    counter.position.set(0,.7,D/2-.25); g.add(counter);
+    const counterTrim=new THREE.Mesh(new THREE.BoxGeometry(W,.03,.03),cyanMat);
+    counterTrim.position.set(0,.76,D/2); g.add(counterTrim);
+
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.6,.62),
+      new THREE.MeshBasicMaterial({map:makeNeonSignTexture(KIOSK_TITLE),transparent:true,side:THREE.DoubleSide}));
+    sign.position.set(0,H+.5,D/2+.2); g.add(sign);
+    const signLight=new THREE.PointLight(0xff2fb0,2.2,7);
+    signLight.position.set(0,H+.5,D/2+.6); g.add(signLight);
+    const shopGlow=new THREE.PointLight(0x33e6ff,1.4,6);
+    shopGlow.position.set(0,1.1,D/2-.2); g.add(shopGlow);
+
+    if(posters.length){
+      const cols=Math.min(posters.length,3), rows=Math.ceil(posters.length/cols);
+      const cellW=(W-.5)/cols, cellH=(H-.9)/rows, gridTop=H-.5;
+      posters.forEach((p,i)=>{
+        const col=i%cols, row=Math.floor(i/cols);
+        const maxW=cellW-.18, maxH=cellH-.18;
+        let pw=maxW, ph=pw/p.aspect;
+        if(ph>maxH){ ph=maxH; pw=ph*p.aspect; }
+        const cx=-W/2+.25+cellW*col+cellW/2, cy=gridTop-cellH*row-cellH/2;
+        const border=new THREE.Mesh(new THREE.PlaneGeometry(pw+.1,ph+.1),
+          new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xff2fb0,emissiveIntensity:.5,side:THREE.DoubleSide}));
+        border.position.set(cx,cy,-D/2+.07); g.add(border);
+        const img=new THREE.Mesh(new THREE.PlaneGeometry(pw,ph),
+          new THREE.MeshBasicMaterial({map:p.tex,side:THREE.DoubleSide}));
+        img.position.set(cx,cy,-D/2+.08); g.add(img);
+      });
+    }
+
+    const [x,,z]=KIOSK_POS;
+    g.position.set(x,0,z); g.rotation.y=Math.atan2(-x,-z);
+    scene.add(g);
+
+    kioskHub={ g, art:{title:KIOSK_TITLE,src:KIOSK_POSTERS[0],gallery:KIOSK_POSTERS} };
+  });
+}
+
 function buildGrid(){
   const grid=document.getElementById('pgrid');
   ARTWORKS.forEach(art=>{
@@ -783,6 +882,12 @@ function buildGrid(){
     }
     grid.appendChild(el);
   });
+  if(KIOSK_POSTERS.length){
+    const kEl=document.createElement('div'); kEl.className='pitem';
+    kEl.innerHTML=`<img src="${KIOSK_POSTERS[0]}" alt="${KIOSK_TITLE}" loading="lazy"><div class="pitem-label">${KIOSK_TITLE}</div>`;
+    kEl.onclick=()=>openLightbox(KIOSK_POSTERS[0],KIOSK_TITLE,KIOSK_POSTERS);
+    grid.appendChild(kEl);
+  }
 }
 
 /* ════════════════════════════════════════
@@ -1050,6 +1155,11 @@ function animate(ms){
     ao.border.material.emissiveIntensity=.35+nf*.9;
   });
 
+  if(kioskHub){
+    const dK=charGroup.position.distanceTo(kioskHub.g.position);
+    if(dK<minD){minD=dK;nearest=kioskHub;}
+  }
+
   document.getElementById('art-hint').style.opacity=(minD<ART_CLOSE_D*1.1&&!lbOpen)?'1':'0';
 
   if(!lbOpen&&nearest&&minD<ART_OPEN_D&&now>lbCooldownUntil){
@@ -1090,7 +1200,7 @@ async function init(){
   let p=0;
   const iv=setInterval(()=>{ p=Math.min(p+Math.random()*18,88); pb.style.width=p+'%'; },180);
 
-  await loadArtworks();
+  await Promise.all([loadArtworks(), buildKiosk()]);
   clearInterval(iv);
 
   // fill bar to 100% then auto-enter
