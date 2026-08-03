@@ -431,6 +431,7 @@ const CHAR_ROT    = 2.4;
 const ART_OPEN_D  = 3.8;
 const ART_CLOSE_D = 6.0;
 const LB_COOLDOWN = 1800;
+const PATH_WIDTH  = 1.7;
 
 const ARTWORKS = [
   { src:'portfolio/product%20design/AG%20copia.png',
@@ -509,6 +510,58 @@ scene.add(dir);
 }
 
 /* ════════════════════════════════════════
+   PATHS — dirt trails from spawn to each artwork
+════════════════════════════════════════ */
+const PATH_SEGMENTS = ARTWORKS.map(a=>({x1:0,z1:0,x2:a.pos[0],z2:a.pos[2]}));
+
+function distToPathSeg(px,pz,seg){
+  const dx=seg.x2-seg.x1, dz=seg.z2-seg.z1;
+  const len2=dx*dx+dz*dz;
+  let t=len2>0 ? ((px-seg.x1)*dx+(pz-seg.z1)*dz)/len2 : 0;
+  t=Math.max(0,Math.min(1,t));
+  const cx=seg.x1+t*dx, cz=seg.z1+t*dz;
+  return Math.hypot(px-cx,pz-cz);
+}
+function nearAnyPath(px,pz,margin){
+  for(const seg of PATH_SEGMENTS) if(distToPathSeg(px,pz,seg)<margin) return true;
+  return false;
+}
+
+function makePathStrip(seg,width){
+  const dx=seg.x2-seg.x1, dz=seg.z2-seg.z1, len=Math.hypot(dx,dz);
+  const ux=dx/len, uz=dz/len, px=-uz, pz=ux, hw=width/2;
+  const y=-.012;
+  const verts=new Float32Array([
+    seg.x1+px*hw, y, seg.z1+pz*hw,
+    seg.x1-px*hw, y, seg.z1-pz*hw,
+    seg.x2-px*hw, y, seg.z2-pz*hw,
+    seg.x2+px*hw, y, seg.z2+pz*hw,
+  ]);
+  const uvs=new Float32Array([0,0, 1,0, 1,1, 0,1]);
+  const idx=[0,1,2, 0,2,3];
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(verts,3));
+  g.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+
+const pathFS=`
+varying vec2 vUv;
+void main(){
+  float edge=abs(vUv.x-.5)*2.0;
+  float a=1.0-smoothstep(.72,1.0,edge);
+  vec3 col=mix(vec3(.10,.085,.065),vec3(.16,.135,.10),1.0-vUv.x*.3);
+  gl_FragColor=vec4(col,a*.92);
+}`;
+const pathVS=`varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.0);}`;
+const pathMat=new THREE.ShaderMaterial({vertexShader:pathVS,fragmentShader:pathFS,transparent:true,side:THREE.DoubleSide});
+
+PATH_SEGMENTS.forEach(seg=>{
+  scene.add(new THREE.Mesh(makePathStrip(seg,PATH_WIDTH),pathMat));
+});
+
+/* ════════════════════════════════════════
    GRASS
 ════════════════════════════════════════ */
 const grassVS=`
@@ -561,9 +614,14 @@ const grassMat=new THREE.ShaderMaterial({
 const grassMesh=new THREE.InstancedMesh(bladeGeo(),grassMat,GRASS_COUNT);
 {
   const d=new THREE.Object3D();
+  const pathMargin=PATH_WIDTH/2+.15;
   for(let i=0;i<GRASS_COUNT;i++){
-    const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*GRASS_AREA;
-    d.position.set(Math.cos(a)*r,0,Math.sin(a)*r);
+    let x,z,tries=0;
+    do{
+      const a=Math.random()*Math.PI*2,r=Math.sqrt(Math.random())*GRASS_AREA;
+      x=Math.cos(a)*r; z=Math.sin(a)*r; tries++;
+    }while(nearAnyPath(x,z,pathMargin)&&tries<24);
+    d.position.set(x,0,z);
     d.rotation.y=Math.random()*Math.PI*2;
     d.scale.set(.75+Math.random()*.55,.65+Math.random()*.65,1);
     d.updateMatrix(); grassMesh.setMatrixAt(i,d.matrix);
